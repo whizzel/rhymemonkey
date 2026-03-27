@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  createdAt    DateTime @default(now())
+  totalGames   Int      @default(0)
+  highScore    Int      @default(0)
+  averageScore Float    @default(0)
+  
+  games        GameSession[]
+  
+  @@map("players")
+}
+
+model GameSession {
+  id            String   @id @default(cuid())
+  playerId      String
+  playerName    String
+  difficulty    String   // easy, medium, hard
+  timeLimit     Int      // in seconds
+  score         Int
+  wordsCompleted Int
+  accuracy      Float
+  duration      Int      // actual time taken in seconds
+  completedAt   DateTime @default(now())
+  
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@map("game_sessions")
+}
