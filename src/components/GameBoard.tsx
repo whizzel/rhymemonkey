@@ -6,12 +6,14 @@ import type { GameState } from '@/lib/types';
 interface GameBoardProps {
   gameState: GameState;
   showError: boolean;
+  showSuccess: boolean;
   onInput: (value: string) => void;
+  onSubmit: () => void;
   onSkip: () => void;
   onPause: () => void;
 }
 
-export function GameBoard({ gameState, showError, onInput, onSkip, onPause }: GameBoardProps) {
+export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit, onSkip, onPause }: GameBoardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function GameBoard({ gameState, showError, onInput, onSkip, onPause }: Ga
             <div className="text-2xl font-bold">{gameState.accuracy}%</div>
           </div>
         </div>
-        
+
         <div className="text-right">
           <span className="text-[10px] uppercase tracking-widest text-white/70 block">Time</span>
           <div className={`text-3xl font-bold ${getTimeColor()}`}>
@@ -67,7 +69,7 @@ export function GameBoard({ gameState, showError, onInput, onSkip, onPause }: Ga
         <div className="text-4xl font-bold text-white mb-8" style={{ textShadow: '3px 3px 0 #000' }}>
           {gameState.currentWord.toUpperCase()}
         </div>
-        
+
         {/* User Input Display */}
         <div className="relative">
           <input
@@ -75,27 +77,32 @@ export function GameBoard({ gameState, showError, onInput, onSkip, onPause }: Ga
             type="text"
             value={gameState.userInput}
             onChange={(e) => onInput(e.target.value)}
-            className={`w-full text-2xl text-center bg-transparent border-2 rounded-lg px-4 py-3 text-white placeholder-white/50 outline-none transition-colors ${
-              showError ? 'border-red-500 animate-pulse' : 'border-white/30 focus:border-mario-gold'
-            }`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onSubmit();
+              }
+            }}
+            className={`w-full text-2xl font-bold text-center bg-transparent border-2 rounded-lg px-4 py-3 placeholder-white/50 outline-none transition-colors ${showError
+                ? 'border-red-500 animate-pulse text-red-400'
+                : showSuccess
+                  ? 'border-green-500 animate-pulse text-green-400'
+                  : 'border-white/30 focus:border-mario-gold text-white'
+              }`}
             placeholder="Type a rhyme..."
             disabled={!gameState.isPlaying || gameState.isPaused}
           />
-          {gameState.userInput && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className={`text-2xl font-bold ${
-                showError ? 'text-red-400' : 'text-white'
-              }`}>
-                {gameState.userInput}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Error Effect Overlay */}
       {showError && (
         <div className="absolute inset-0 bg-red-500/20 animate-pulse rounded-lg pointer-events-none" />
+      )}
+
+      {/* Success Effect Overlay */}
+      {showSuccess && (
+        <div className="absolute inset-0 bg-green-500/20 animate-pulse rounded-lg pointer-events-none" />
       )}
 
       {/* Game Controls */}

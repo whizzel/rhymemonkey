@@ -9,8 +9,10 @@ interface GameDashboardProps {
   gameState: GameState;
   currentRhymeGroup: RhymeGroup | null;
   showError: boolean;
+  showSuccess: boolean;
   player: Player | null;
   onInput: (input: string) => void;
+  onSubmit: () => void;
   onSkip: () => void;
   onPause: () => void;
   onBackToMenu: () => void;
@@ -21,8 +23,10 @@ export function GameDashboard({
   gameState, 
   currentRhymeGroup,
   showError,
+  showSuccess,
   player, 
   onInput, 
+  onSubmit,
   onSkip,
   onPause, 
   onBackToMenu, 
@@ -59,7 +63,9 @@ export function GameDashboard({
               <GameBoard 
                 gameState={gameState} 
                 showError={showError}
+                showSuccess={showSuccess}
                 onInput={onInput} 
+                onSubmit={onSubmit}
                 onSkip={onSkip}
                 onPause={onPause}
               />
@@ -87,7 +93,7 @@ export function GameDashboard({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[10px] text-white/70">Average:</span>
-                    <span className="text-[10px] text-white font-bold">{Math.round(player.averageScore)}</span>
+                    <span className="text-[10px] text-white font-bold">{Math.round(player.averageScore || 0)}</span>
                   </div>
                 </div>
               </div>

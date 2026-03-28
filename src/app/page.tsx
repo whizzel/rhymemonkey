@@ -22,7 +22,7 @@ export default function Home() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [gameMode, setGameMode] = useState<GameMode>(null);
   
-  const { gameState, currentRhymeGroup, showError, gameHistory, startGame, pauseGame, handleInput, handleSkip, resetGame } = useGameState();
+  const { gameState, currentRhymeGroup, showError, showSuccess, gameHistory, startGame, pauseGame, handleInputChange, handleSubmitWord, handleSkip, resetGame } = useGameState();
 
   const handleStartGame = async (mode: 'solo' | 'private') => {
     setError('');
@@ -105,8 +105,10 @@ export default function Home() {
         gameState={gameState} 
         currentRhymeGroup={currentRhymeGroup}
         showError={showError}
+        showSuccess={showSuccess}
         player={player}
-        onInput={handleInput} 
+        onInput={handleInputChange} 
+        onSubmit={handleSubmitWord}
         onSkip={handleSkip}
         onPause={pauseGame}
         onBackToMenu={handleBackToMenu}

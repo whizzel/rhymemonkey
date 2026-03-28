@@ -92,7 +92,7 @@ export function Leaderboard({ limit = 10 }: LeaderboardProps) {
                     {player.name}
                   </div>
                   <div className="text-[10px] text-white/50">
-                    {player.totalGames} games • {player.averageScore.toFixed(0)} avg
+                    {player.totalGames} games • {(player.averageScore || 0).toFixed(0)} avg
                   </div>
                 </div>
               </div>

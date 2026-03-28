@@ -25,6 +25,8 @@ export function useGameState() {
 
   const [currentRhymeGroup, setCurrentRhymeGroup] = useState<RhymeGroup | null>(null);
   const [showError, setShowError] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [player, setPlayer] = useState<Player | null>(null);
   const [gameHistory, setGameHistory] = useState<GameSession[]>([]);
 
@@ -64,7 +66,7 @@ export function useGameState() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
-    if (gameState.isPlaying && !gameState.isPaused && gameState.timeRemaining > 0) {
+    if (gameState.isPlaying && !gameState.isPaused && !isLoading && gameState.timeRemaining > 0) {
       interval = setInterval(() => {
         setGameState(prev => ({
           ...prev,
@@ -78,51 +80,72 @@ export function useGameState() {
     return () => clearInterval(interval);
   }, [gameState.isPlaying, gameState.isPaused, gameState.timeRemaining, endGame]);
 
-  const startGame = useCallback((playerData: Player, difficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameMode: 'solo' | 'private') => {
+  const startGame = useCallback(async (playerData: Player, difficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameMode: 'solo' | 'private') => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     const adjustedTimeLimit = Math.floor(timeLimit * settings.timeMultiplier);
     
-    // Get a random rhyme group and word
-    const rhymeGroup = getRandomRhymeGroup(difficulty);
-    const firstWord = getRandomWordFromGroup(rhymeGroup);
-    
     setPlayer(playerData);
-    setCurrentRhymeGroup(rhymeGroup);
+    setIsLoading(true);
     setGameState({
       isPlaying: true,
       isPaused: false,
       timeRemaining: adjustedTimeLimit,
       score: 0,
       wordsCompleted: 0,
-      currentWord: firstWord,
+      currentWord: 'Loading...',
       userInput: '',
       accuracy: 100,
       difficulty,
       timeLimit: adjustedTimeLimit,
       gameMode
     });
+
+    // Get a random rhyme group and word async
+    const rhymeGroup = await getRandomRhymeGroup(difficulty);
+    const firstWord = getRandomWordFromGroup(rhymeGroup);
+    
+    setCurrentRhymeGroup(rhymeGroup);
+    setGameState(prev => ({
+      ...prev,
+      currentWord: firstWord
+    }));
+    setIsLoading(false);
   }, []);
 
   const pauseGame = useCallback(() => {
     setGameState(prev => ({ ...prev, isPaused: !prev.isPaused }));
   }, []);
 
-  const handleInput = useCallback((input: string) => {
+  const handleInputChange = useCallback((input: string) => {
     if (!gameState.isPlaying || gameState.isPaused || !currentRhymeGroup) return;
-
     setGameState(prev => ({ ...prev, userInput: input }));
+  }, [gameState.isPlaying, gameState.isPaused, currentRhymeGroup]);
+
+  const handleSubmitWord = useCallback(async () => {
+    if (!gameState.isPlaying || gameState.isPaused || isLoading || !currentRhymeGroup) return;
+
+    const input = gameState.userInput.trim();
+    if (!input) return;
 
     // Check if input rhymes with current word
-    const allValidRhymes = [currentRhymeGroup.baseWord, ...currentRhymeGroup.rhymes];
-    const normalizedInput = input.toLowerCase().trim();
+    const allValidRhymes = [currentRhymeGroup.word, ...currentRhymeGroup.rhymes];
+    const normalizedInput = input.toLowerCase();
     const isRhyme = allValidRhymes.some(rhyme => rhyme.toLowerCase() === normalizedInput);
 
     if (isRhyme) {
       const settings = DIFFICULTY_SETTINGS[gameState.difficulty];
       const points = Math.floor(10 * settings.scoreMultiplier);
       
+      // Show success for right word
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 500);
+
+      // Indicate loading next word
+      setIsLoading(true);
+      setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
+
       // Get new rhyme group and word for next round
-      const newRhymeGroup = getRandomRhymeGroup(gameState.difficulty);
+      const newRhymeGroup = await getRandomRhymeGroup(gameState.difficulty);
       const newWord = getRandomWordFromGroup(newRhymeGroup);
       
       setCurrentRhymeGroup(newRhymeGroup);
@@ -130,31 +153,34 @@ export function useGameState() {
         ...prev,
         score: prev.score + points,
         wordsCompleted: prev.wordsCompleted + 1,
-        currentWord: newWord,
-        userInput: ''
+        currentWord: newWord
       }));
-    } else if (input.trim() !== '') {
+      setIsLoading(false);
+    } else {
       // Show error for wrong word
       setShowError(true);
       setTimeout(() => setShowError(false), 500);
       setGameState(prev => ({ ...prev, userInput: '' }));
     }
-  }, [gameState.isPlaying, gameState.isPaused, gameState.difficulty, currentRhymeGroup]);
+  }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, gameState.userInput, currentRhymeGroup]);
 
-  const handleSkip = useCallback(() => {
-    if (!gameState.isPlaying || gameState.isPaused || !currentRhymeGroup) return;
+  const handleSkip = useCallback(async () => {
+    if (!gameState.isPlaying || gameState.isPaused || isLoading || !currentRhymeGroup) return;
+
+    setIsLoading(true);
+    setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
 
     // Get new rhyme group and word
-    const newRhymeGroup = getRandomRhymeGroup(gameState.difficulty);
+    const newRhymeGroup = await getRandomRhymeGroup(gameState.difficulty);
     const newWord = getRandomWordFromGroup(newRhymeGroup);
     
     setCurrentRhymeGroup(newRhymeGroup);
     setGameState(prev => ({
       ...prev,
-      currentWord: newWord,
-      userInput: ''
+      currentWord: newWord
     }));
-  }, [gameState.isPlaying, gameState.isPaused, gameState.difficulty, currentRhymeGroup]);
+    setIsLoading(false);
+  }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, currentRhymeGroup]);
 
   const resetGame = useCallback(() => {
     setGameState({
@@ -174,14 +200,17 @@ export function useGameState() {
 
   return {
     gameState,
+    isLoading,
     currentRhymeGroup,
     showError,
+    showSuccess,
     player,
     gameHistory,
     startGame,
     pauseGame,
     endGame,
-    handleInput,
+    handleInputChange,
+    handleSubmitWord,
     handleSkip,
     resetGame
   };
