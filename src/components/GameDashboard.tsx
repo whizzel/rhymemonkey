@@ -1,5 +1,6 @@
 'use client';
 
+import { useAudio } from '@/context/AudioContext';
 import { GameBoard } from './GameBoard';
 import { Leaderboard } from './Leaderboard';
 import type { GameState, Player } from '@/lib/types';
@@ -29,6 +30,7 @@ const particles = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 export function GameDashboard({ gameState, currentRhymeGroup, showError, showSuccess, player, onInput, onSubmit, onSkip, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
+  const { playClick } = useAudio();
   const isLow = gameState.timeRemaining <= 10;
   const isMid = gameState.timeRemaining <= 30;
 
@@ -67,7 +69,7 @@ export function GameDashboard({ gameState, currentRhymeGroup, showError, showSuc
         }
         .gd-hud-dot { width:6px;height:6px;border-radius:50%; }
 
-        .gd-inner { position:relative;z-index:1;width:100%;max-width:1180px;padding-top:20px; }
+        .gd-inner { position:relative;z-index:1;width:100%;max-width:1180px;padding-top:60px; }
         .gd-grid { display:grid;grid-template-columns:1fr 310px;gap:18px;align-items:start; }
         @media(max-width:880px){.gd-grid{grid-template-columns:1fr;}}
 
@@ -142,19 +144,6 @@ export function GameDashboard({ gameState, currentRhymeGroup, showError, showSuc
           <div className="gd-grid">
 
             <div className="dp">
-              <div className="gd-stats">
-                {[
-                  { lbl: '⏱ Time', val: `${gameState.timeRemaining}s`, cls: isLow ? 'red' : isMid ? 'amber' : 'green' },
-                  { lbl: '📝 Tried', val: gameState.wordsCompleted, cls: '' },
-                  { lbl: '✅ Correct', val: gameState.wordsCompleted, cls: 'green' },
-                  { lbl: '⏭ Skipped', val: 0, cls: 'amber' },
-                ].map(s => (
-                  <div key={s.lbl} className="gd-stat">
-                    <div className="gd-slbl">{s.lbl}</div>
-                    <div className={`gd-sval ${s.cls}`}>{s.val}</div>
-                  </div>
-                ))}
-              </div>
               <div className="gd-board-wrap">
                 <GameBoard gameState={gameState} showError={showError} showSuccess={showSuccess} onInput={onInput} onSubmit={onSubmit} onSkip={onSkip} onPause={onPause} />
               </div>
@@ -189,8 +178,8 @@ export function GameDashboard({ gameState, currentRhymeGroup, showError, showSuc
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <button type="button" className="gd-ctrl ctrl-pause" onClick={onPause}>{gameState.isPaused ? '▶ RESUME' : '⏸ PAUSE'}</button>
-                <button type="button" className="gd-ctrl ctrl-exit" onClick={onBackToMenu}>✕ EXIT</button>
+                <button type="button" className="gd-ctrl ctrl-pause" onClick={() => { playClick(); onPause(); }}>{gameState.isPaused ? '▶ RESUME' : '⏸ PAUSE'}</button>
+                <button type="button" className="gd-ctrl ctrl-exit" onClick={() => { playClick(); onBackToMenu(); }}>✕ EXIT</button>
               </div>
             </div>
           </div>

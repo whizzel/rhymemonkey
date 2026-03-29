@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { Player } from '@/lib/types';
+import { useAudio } from '@/context/AudioContext';
 
 interface LeaderboardProps { limit?: number; }
 
@@ -12,6 +13,7 @@ const RANK = {
 } as Record<number, { icon: string; color: string; bg: string; border: string }>;
 
 export function Leaderboard({ limit = 10 }: LeaderboardProps) {
+  const { playClick } = useAudio();
   const [data, setData] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +57,7 @@ export function Leaderboard({ limit = 10 }: LeaderboardProps) {
       <div className="lb-wrap">
         <div className="lb-head">
           <div className="lb-title">Leaderboard</div>
-          <button type="button" className="lb-refresh" onClick={fetch_}>↺ Refresh</button>
+          <button type="button" className="lb-refresh" onClick={() => { playClick(); fetch_(); }}>↺ Refresh</button>
         </div>
         {loading ? (
           <div className="lb-loading">🤖 Loading rankings...</div>

@@ -1,10 +1,14 @@
 'use client';
 
+import { useAudio } from '@/context/AudioContext';
+
 interface GameActionsProps {
   onStartGame: (gameMode: 'solo' | 'private') => void;
 }
 
 export function GameActions({ onStartGame }: GameActionsProps) {
+  const { playClick } = useAudio();
+
   return (
     <>
       <style>{`
@@ -44,12 +48,12 @@ export function GameActions({ onStartGame }: GameActionsProps) {
       `}</style>
 
       <div className="ga-grid">
-        <button type="button" className="ga-btn btn-solo" onClick={() => onStartGame('solo')}>
+        <button type="button" className="ga-btn btn-solo" onClick={() => { playClick(); onStartGame('solo'); }}>
           <span className="ga-icon">🤖</span>
           <span className="ga-label">PLAY SOLO</span>
           <span className="ga-sub">single player</span>
         </button>
-        <button type="button" className="ga-btn btn-private" onClick={() => onStartGame('private')}>
+        <button type="button" className="ga-btn btn-private" onClick={() => { playClick(); onStartGame('private'); }}>
           <span className="ga-icon">🎮</span>
           <span className="ga-label">PRIVATE</span>
           <span className="ga-sub">invite friends</span>

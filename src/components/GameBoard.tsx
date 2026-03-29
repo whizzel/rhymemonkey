@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { MonkeyCharacter, type MonkeyMood } from './MonkeyCharacter';
 import type { GameState } from '@/lib/types';
+import { useAudio } from '@/context/AudioContext';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 interface GameBoardProps {
   gameState: GameState;
@@ -21,7 +23,11 @@ function getMood(err: boolean, ok: boolean): MonkeyMood {
 }
 
 export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit, onSkip, onPause }: GameBoardProps) {
+  const { isMuted, toggleMute, playClick, playTap } = useAudio();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useKeyboardShortcuts(toggleMute, onPause);
+
   const [scorePop, setScorePop] = useState(false);
   const [lastScore, setLastScore] = useState(gameState.score);
 
@@ -140,6 +146,15 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         .btn-submit { flex:1; background:linear-gradient(180deg,#cc1a1a,#8a0a0a); color:#fff; box-shadow:0 4px 0 #4a0505,0 5px 14px rgba(200,10,10,0.4); font-size:15px; }
         .btn-pause  { background:linear-gradient(180deg,#1a55cc,#0a2a8a); color:#c8e0ff; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(10,50,200,0.4); border:1px solid #2a4a9a; }
 
+        /* Sound Toggle */
+        .gb-sound-opt { position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:6px; z-index:15; }
+        .gb-mute-btn { background:none; border:1px solid #1a3a6a; color:#3a6a9a; border-radius:6px; width:28px; height:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:color .2s, border-color .2s; outline:none; font-size:14px; }
+        .gb-mute-btn:hover { color:#00ff88; border-color:#00ff88; }
+        .gb-mute-btn.on { color:#00ff88; border-color:#00ff88; box-shadow:0 0 10px rgba(0,255,136,0.15); }
+        .gb-hint { font-size:8px; font-weight:800; letter-spacing:.1em; color:#1a3a5a; text-transform:uppercase; animation:hintPulse 2s infinite; }
+        @keyframes hintPulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+
         /* Pause overlay */
         .gb-pause {
           position:absolute;inset:0;background:rgba(5,13,26,0.92);
@@ -152,13 +167,20 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
       `}</style>
 
       <div className="gb-root">
+        <div className="gb-sound-opt">
+          <span className="gb-hint">[M] TO MUTE</span>
+          <button type="button" className={`gb-mute-btn ${!isMuted ? 'on' : ''}`} onClick={toggleMute}>
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+        </div>
+
         {showError && <div className="gb-flash err" />}
         {showSuccess && <div className="gb-flash ok" />}
 
         <div className="gb-stats">
           {[
             { lbl: 'Score', val: gameState.score, cls: scorePop ? 'pop' : '' },
-            { lbl: 'Words', val: gameState.wordsCompleted, cls: '' },
+            { lbl: 'Correct', val: gameState.wordsCompleted, cls: '' },
             { lbl: 'Accuracy', val: `${gameState.accuracy}%`, cls: 'green' },
             { lbl: 'Time', val: fmt(gameState.timeRemaining), cls: isLow ? 'danger' : isMid ? 'warn' : 'green' },
           ].map(s => (
@@ -181,17 +203,23 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
           ref={inputRef}
           type="text"
           value={gameState.userInput}
-          onChange={e => onInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } }}
+          onChange={e => { onInput(e.target.value); playTap(); }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              playClick();
+              onSubmit();
+            }
+          }}
           className={`gb-input ${showError ? 'error' : showSuccess ? 'ok' : ''}`}
           placeholder="enter your rhyme..."
           disabled={!gameState.isPlaying || gameState.isPaused}
         />
 
         <div className="gb-btns">
-          <button type="button" className="gb-btn btn-skip" onClick={onSkip} disabled={!gameState.isPlaying || gameState.isPaused}>⏭ SKIP</button>
-          <button type="button" className="gb-btn btn-submit" onClick={onSubmit} disabled={!gameState.isPlaying || gameState.isPaused}>⚡ SUBMIT</button>
-          <button type="button" className="gb-btn btn-pause" onClick={onPause} disabled={!gameState.isPlaying}>{gameState.isPaused ? '▶' : '⏸'}</button>
+          <button type="button" className="gb-btn btn-skip" onClick={() => { playClick(); onSkip(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⏭ SKIP</button>
+          <button type="button" className="gb-btn btn-submit" onClick={() => { playClick(); onSubmit(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⚡ SUBMIT</button>
+          <button type="button" className="gb-btn btn-pause" onClick={() => { playClick(); onPause(); }} disabled={!gameState.isPlaying}>{gameState.isPaused ? '▶' : '⏸'}</button>
         </div>
 
         {gameState.isPaused && (

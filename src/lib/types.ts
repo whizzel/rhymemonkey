@@ -29,6 +29,7 @@ export interface GameState {
   currentWord: string;
   userInput: string;
   accuracy: number;
+  totalAttempts: number;
   difficulty: 'easy' | 'medium' | 'hard';
   timeLimit: number;
   gameMode: 'solo' | 'private';

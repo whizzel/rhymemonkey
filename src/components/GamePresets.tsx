@@ -1,5 +1,7 @@
 'use client';
 
+import { useAudio } from '@/context/AudioContext';
+
 interface GamePresetsProps {
   selectedDifficulty: 'easy' | 'medium' | 'hard';
   selectedTime: number;
@@ -20,6 +22,8 @@ const TIMES = [
 ] as const;
 
 export function GamePresets({ selectedDifficulty, selectedTime, onDifficultyChange, onTimeChange }: GamePresetsProps) {
+  const { playClick } = useAudio();
+
   return (
     <>
       <style>{`
@@ -113,7 +117,7 @@ export function GamePresets({ selectedDifficulty, selectedTime, onDifficultyChan
                   <button key={value} type="button"
                     className={`gpr-chip ${on ? 'gpr-on' : ''}`}
                     style={on ? { background: activeBg, boxShadow: `0 3px 0 ${activeShadow},0 0 20px ${activeGlow}` } : {}}
-                    onClick={() => onDifficultyChange(value)}
+                    onClick={() => { playClick(); onDifficultyChange(value); }}
                   >
                     <span className="gpr-check">✓</span>
                     <span className="gpr-chip-icon">{icon}</span>
@@ -138,7 +142,7 @@ export function GamePresets({ selectedDifficulty, selectedTime, onDifficultyChan
                       background: 'linear-gradient(180deg,#1a55cc,#0a2a8a)',
                       boxShadow: '0 3px 0 #050f40,0 0 20px rgba(10,80,200,0.35)',
                     } : {}}
-                    onClick={() => onTimeChange(value)}
+                    onClick={() => { playClick(); onTimeChange(value); }}
                   >
                     <span className="gpr-check">✓</span>
                     <span className="gpr-chip-icon">{icon}</span>
