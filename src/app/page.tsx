@@ -21,12 +21,12 @@ export default function Home() {
   const [error, setError] = useState('');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [gameMode, setGameMode] = useState<GameMode>(null);
-  
+
   const { gameState, currentRhymeGroup, showError, showSuccess, gameHistory, startGame, pauseGame, handleInputChange, handleSubmitWord, handleSkip, resetGame } = useGameState();
 
   const handleStartGame = async (mode: 'solo' | 'private') => {
     setError('');
-    
+
     if (!playerName.trim()) {
       setError('Please enter your name');
       return;
@@ -85,7 +85,7 @@ export default function Home() {
   // Render different views based on current state
   if (currentView === 'room') {
     return (
-      <Room 
+      <Room
         player={player!}
         gameMode={gameMode!}
         difficulty={selectedDifficulty}
@@ -101,13 +101,13 @@ export default function Home() {
 
   if (currentView === 'playing') {
     return (
-      <GameDashboard 
-        gameState={gameState} 
+      <GameDashboard
+        gameState={gameState}
         currentRhymeGroup={currentRhymeGroup}
         showError={showError}
         showSuccess={showSuccess}
         player={player}
-        onInput={handleInputChange} 
+        onInput={handleInputChange}
         onSubmit={handleSubmitWord}
         onSkip={handleSkip}
         onPause={pauseGame}
@@ -121,7 +121,7 @@ export default function Home() {
     return (
       <div className="relative flex min-h-screen select-none flex-col items-center justify-center overflow-hidden font-retro bg-gradient-to-br from-red-900 via-red-800 to-orange-900 p-4">
         <div className="w-full max-w-2xl">
-          <GameOver 
+          <GameOver
             gameState={gameState}
             player={player}
             onPlayAgain={handlePlayAgain}

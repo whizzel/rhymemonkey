@@ -1,7 +1,7 @@
 'use client';
-
+// ─── Room.tsx ────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
-import { MarioButton } from '@/components/ui/mario-button';
+import { MonkeyCharacter } from './MonkeyCharacter';
 import type { Player } from '@/lib/types';
 
 interface RoomProps {
@@ -11,185 +11,137 @@ interface RoomProps {
   timeLimit: number;
   onStartGame: () => void;
   onBackToMenu: () => void;
-  onGameStart?: () => void; // Callback to change view to playing
+  onGameStart?: () => void;
 }
 
-export function Room({ 
-  player, 
-  gameMode, 
-  difficulty, 
-  timeLimit, 
-  onStartGame, 
-  onBackToMenu,
-  onGameStart
-}: RoomProps) {
+const DIFF_META = {
+  easy: { label: 'EASY', color: '#0a7a0a' },
+  medium: { label: 'MEDIUM', color: '#cc8800' },
+  hard: { label: 'HARD', color: '#cc1a1a' },
+};
+
+export function Room({ player, gameMode, difficulty, timeLimit, onStartGame, onBackToMenu, onGameStart }: RoomProps) {
   const [roomCode, setRoomCode] = useState('');
   const [players, setPlayers] = useState<Player[]>([player]);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  // Generate room code for private games
-  useEffect(() => {
-    if (gameMode === 'private') {
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-      setRoomCode(code);
-    }
-  }, [gameMode]);
+  useEffect(() => { if (gameMode === 'private') setRoomCode(Math.random().toString(36).substring(2, 8).toUpperCase()); }, [gameMode]);
 
   useEffect(() => {
-    if (countdown !== null && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (countdown === 0) {
-      onStartGame();
-      onGameStart?.(); // Change view to playing
-      setCountdown(null);
-    }
+    if (countdown === null) return;
+    if (countdown > 0) { const t = setTimeout(() => setCountdown(c => (c ?? 1) - 1), 1000); return () => clearTimeout(t); }
+    else { onStartGame(); onGameStart?.(); setCountdown(null); }
   }, [countdown, onStartGame, onGameStart]);
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const diff = DIFF_META[difficulty];
 
-  const handleStartGame = () => {
-    setCountdown(3);
-  };
-
-  // Show countdown instead of room interface
-  if (countdown !== null) {
-    return (
-      <div className="relative flex min-h-screen select-none flex-col items-center justify-center overflow-hidden font-retro bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="text-6xl font-bold text-white animate-pulse">
-            {countdown}
-          </div>
-        </div>
+  if (countdown !== null) return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@700&display=swap');
+        .room-cd-bg{min-height:100vh;background:linear-gradient(160deg,#050d1a,#080f1e);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:'Exo 2',sans-serif;}
+        .room-cd-bg::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(26,85,204,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(26,85,204,0.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+        .room-cd-lbl{font-size:9px;font-weight:800;letter-spacing:.25em;text-transform:uppercase;color:#3a6a9a;}
+        .room-cd-num{font-family:'Orbitron',monospace;font-weight:900;font-size:110px;line-height:1;color:#ff2a2a;text-shadow:0 0 30px rgba(255,30,30,0.7),0 0 60px rgba(255,30,30,0.3);animation:cdSlam .85s cubic-bezier(0.34,1.56,0.64,1) forwards;}
+        @keyframes cdSlam{from{transform:scale(1.8) rotate(-5deg);opacity:0}50%{transform:scale(0.9) rotate(2deg);opacity:1}to{transform:scale(1) rotate(0);opacity:1}}
+      `}</style>
+      <div className="room-cd-bg">
+        <MonkeyCharacter mood="excited" size={110} />
+        <div className="room-cd-lbl">// Initializing...</div>
+        <div key={countdown} className="room-cd-num">{countdown}</div>
       </div>
-    );
-  }
+    </>
+  );
 
   return (
-    <div className="relative flex min-h-screen select-none flex-col items-center justify-center overflow-hidden font-retro bg-gradient-to-br from-red-900 via-red-800 to-orange-900">
-      <div className="z-10 flex w-[min(95vw,1180px)] flex-col gap-6 items-center">
-        
-        {/* Stats Bar */}
-        <div className="grid w-full gap-3 max-w-[760px] grid-cols-2 sm:grid-cols-4">
-          <div className="mario-panel flex w-full min-w-0 flex-col items-center gap-1 px-3 py-2">
-            <span className="uppercase tracking-widest text-mario-gold text-[8px]">Time</span>
-            <span className="text-lg text-white" style={{textShadow: '2px 2px 0 #000'}}>
-              {timeLimit}
-            </span>
-          </div>
-          <div className="mario-panel flex w-full min-w-0 flex-col items-center gap-1 px-3 py-2">
-            <span className="uppercase tracking-widest text-mario-gold text-[8px]">Attempted</span>
-            <span className="text-lg text-white" style={{textShadow: '2px 2px 0 #000'}}>
-              0
-            </span>
-          </div>
-          <div className="mario-panel flex w-full min-w-0 flex-col items-center gap-1 px-3 py-2">
-            <span className="uppercase tracking-widest text-mario-gold text-[8px]">Correct</span>
-            <span className="text-lg text-white" style={{textShadow: '2px 2px 0 #000'}}>
-              0
-            </span>
-          </div>
-          <div className="mario-panel flex w-full min-w-0 flex-col items-center gap-1 px-3 py-2">
-            <span className="uppercase tracking-widest text-mario-gold text-[8px]">Skipped</span>
-            <span className="text-lg text-white" style={{textShadow: '2px 2px 0 #000'}}>
-              0
-            </span>
-          </div>
-        </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@600;700;800&display=swap');
+        .room-bg{min-height:100vh;background:radial-gradient(ellipse at 15% 20%,rgba(204,26,26,0.1) 0%,transparent 45%),radial-gradient(ellipse at 85% 80%,rgba(26,85,204,0.12) 0%,transparent 45%),linear-gradient(160deg,#050d1a,#080f1e);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;padding:32px 16px;font-family:'Exo 2',sans-serif;user-select:none;}
+        .room-bg::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(26,85,204,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(26,85,204,0.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+        .room-inner{position:relative;z-index:1;width:100%;max-width:620px;display:flex;flex-direction:column;gap:14px;}
+        .rp{background:linear-gradient(160deg,#0d1f35,#080f1e);border:2px solid #1a3a6a;border-radius:14px;overflow:hidden;position:relative;box-shadow:0 0 0 1px #0d1f35,0 10px 32px rgba(0,0,0,0.6),inset 0 0 20px rgba(0,30,80,0.07);}
+        .rp::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#1a55cc 30%,#cc1a1a 70%,transparent);}
+        .rp::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);border-radius:14px;}
+        .rp-body{padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative;z-index:1;}
+        .r-mode{display:inline-flex;align-items:center;gap:6px;background:rgba(26,85,204,0.12);border:1px solid #1a3a6a;border-radius:20px;padding:5px 14px;font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6a9ac0;}
+        .r-code-lbl{font-size:8px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#3a6a9a;margin-bottom:6px;text-align:center;}
+        .r-code{font-family:'Orbitron',monospace;font-weight:900;font-size:40px;color:#ff2a2a;text-shadow:0 0 20px rgba(255,30,30,0.5);letter-spacing:.15em;line-height:1;}
+        .r-copy-btn{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:.08em;border:none;border-radius:7px;padding:9px 18px;cursor:pointer;position:relative;overflow:hidden;transition:transform .1s,filter .15s;outline:none;background:linear-gradient(180deg,#1a2a40,#0d1525);color:#6a9ac0;box-shadow:0 4px 0 #060c18;border:1px solid #1a3a6a;margin-top:8px;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);}
+        .r-copy-btn:hover{filter:brightness(1.2);transform:translateY(-2px);}
+        .r-copy-btn.copied{background:linear-gradient(180deg,#0a7a0a,#064806);color:#fff;box-shadow:0 4px 0 #032802;border-color:transparent;}
+        .r-div{width:100%;height:1px;background:linear-gradient(90deg,transparent,#1a3a6a 30%,#cc1a1a 50%,#1a3a6a 70%,transparent);}
+        .r-players{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;width:100%;}
+        .r-chip{display:flex;align-items:center;gap:6px;background:#060f1e;border:1px solid #1a3a6a;border-radius:7px;padding:7px 12px;font-family:'Orbitron',monospace;font-size:13px;color:#c8e0ff;box-shadow:0 3px 0 #030710;animation:chipIn .3s cubic-bezier(0.34,1.56,0.64,1) both;}
+        @keyframes chipIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
+        .r-you{font-family:'Exo 2',sans-serif;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:#cc1a1a;color:#fff;border-radius:4px;padding:1px 5px;}
+        .r-pill{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:6px 14px;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:.06em;box-shadow:0 3px 0 rgba(0,0,0,0.3);}
+        .r-wait{font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#3a6a9a;}
+        .r-wait-dots span{display:inline-block;animation:dotB .8s ease-in-out infinite;}
+        .r-wait-dots span:nth-child(2){animation-delay:.15s;}
+        .r-wait-dots span:nth-child(3){animation-delay:.3s;}
+        @keyframes dotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        .r-btns{display:flex;gap:10px;width:100%;}
+        .r-btn{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:.08em;border:none;border-radius:8px;padding:13px;cursor:pointer;flex:1;position:relative;overflow:hidden;transition:transform .1s,filter .15s;outline:none;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+        .r-btn:hover{filter:brightness(1.12);transform:translateY(-2px);}
+        .r-btn:active{transform:translateY(3px)!important;}
+        .r-btn::after{content:'';position:absolute;top:0;left:-80%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);transform:skewX(-20deg);transition:left .4s;pointer-events:none;}
+        .r-btn:hover::after{left:130%;}
+        .rb-exit {background:linear-gradient(180deg,#1a2a40,#0d1525);color:#6a9ac0;box-shadow:0 5px 0 #060c18;border:1px solid #1a3a6a;}
+        .rb-start{background:linear-gradient(180deg,#cc1a1a,#8a0a0a);color:#fff;box-shadow:0 5px 0 #4a0505,0 7px 16px rgba(200,10,10,0.4);}
+        .room-footer{text-align:center;font-family:'Exo 2',sans-serif;font-size:8px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#1a3a5a;}
+      `}</style>
 
-        {/* Main Game Area */}
-        <div className="grid w-full gap-5 max-w-[760px] grid-cols-1">
-          <section className="mario-panel flex w-full flex-col items-center gap-8 p-6 md:p-8">
-            
-            {/* Room Code and Players */}
-            <div className="flex flex-col items-center gap-4 w-full">
-              <div className="text-center">
-                <span className="text-mario-gold text-[10px] uppercase tracking-widest">
-                  {gameMode === 'solo' ? 'SOLO ROOM' : 'ROOM CODE'}
-                </span>
-                {gameMode === 'private' && (
-                  <div className="text-2xl font-bold text-white" style={{textShadow: '2px 2px 0 #000'}}>
-                    {roomCode}
-                  </div>
-                )}
+      <div className="room-bg">
+        <div className="room-inner">
+          <div className="rp">
+            <div className="rp-body">
+              <div className="r-mode">{gameMode === 'solo' ? '🤖 Solo Mode' : '🎮 Private Room'}</div>
+              <MonkeyCharacter mood="idle" size={100} />
+
+              {gameMode === 'private' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div className="r-code-lbl">// Share this code</div>
+                  <div className="r-code">{roomCode}</div>
+                  <button type="button" className={`r-copy-btn ${copied ? 'copied' : ''}`}
+                    onClick={() => { navigator.clipboard.writeText(roomCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+                    {copied ? '✓ COPIED' : '⊕ COPY CODE'}
+                  </button>
+                </div>
+              )}
+
+              <div className="r-div" />
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div className="r-pill" style={{ background: `${diff.color}18`, border: `1px solid ${diff.color}40`, color: diff.color }}>{diff.label}</div>
+                <div className="r-pill" style={{ background: 'rgba(26,85,204,0.12)', border: '1px solid #1a3a6a', color: '#00d4ff' }}>⏱ {timeLimit}s</div>
               </div>
-              
-              {/* Players List */}
-              <div className="flex flex-wrap justify-center gap-3 w-full">
-                {players.map((p) => (
-                  <div key={`player-${p.id}`} className="mario-panel px-3 py-2 flex items-center gap-2">
-                    <span className="text-white text-sm" style={{textShadow: '1px 1px 0 #000'}}>
-                      {p.name}
-                    </span>
-                    <span className="text-[8px] text-mario-green">
-                      ✓
-                    </span>
-                    {p.id === player.id && (
-                      <span className="text-mario-gold text-[10px] ml-1">
-                        YOU
-                      </span>
-                    )}
+
+              <div className="r-players">
+                {players.map((p, i) => (
+                  <div key={p.id} className="r-chip" style={{ animationDelay: `${i * .08}s` }}>
+                    🤖 {p.name}
+                    {p.id === player.id && <span className="r-you">YOU</span>}
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Game Preview */}
-            <div className="flex h-11 w-11 items-center justify-center border-3 border-yellow-700 bg-mario-gold text-xl font-bold text-mario-brown shadow-[3px_3px_0_#000]">
-              ?
-            </div>
-       
-            
-            {/* Ready Status */}
-            <div className="text-center">
-              <p className="text-mario-gold text-sm mb-4">
-                {gameMode === 'solo' ? 'Click START GAME to begin!' : 'Waiting for players to join...'}
-              </p>
-              
-              {/* Room Code Copy for Private Games */}
               {gameMode === 'private' && (
-                <div className="mb-4">
-                  <button 
-                    type="button"
-                    className="mario-btn mario-btn-dark text-[10px] mb-2"
-                    onClick={handleCopyCode}
-                  >
-                    {copied ? 'COPIED!' : 'COPY ROOM CODE'}
-                  </button>
-                  <p className="text-[9px] text-white/70">
-                    Share this code with friends to join
-                  </p>
-                </div>
+                <div className="r-wait">Waiting for players<span className="r-wait-dots"><span>.</span><span>.</span><span>.</span></span></div>
               )}
+
+              <div className="r-div" />
+
+              <div className="r-btns">
+                <button type="button" className="r-btn rb-exit" onClick={onBackToMenu}>✕ EXIT</button>
+                <button type="button" className="r-btn rb-start" onClick={() => setCountdown(3)}>⚡ START</button>
+              </div>
             </div>
-            
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <button 
-                type="button"
-                className="mario-btn mario-btn-dark text-[10px]"
-                onClick={onBackToMenu}
-              >
-                EXIT GAME
-              </button>
-              <button 
-                type="button"
-                className="mario-btn mario-btn-green text-[10px]"
-                onClick={handleStartGame}
-              >
-                START GAME
-              </button>
-            </div>
-          </section>
+          </div>
+          <div className="room-footer">// RHYMEMONKEY — by @aarushe_reddy</div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

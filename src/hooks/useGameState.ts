@@ -130,7 +130,10 @@ export function useGameState() {
     // Check if input rhymes with current word
     const allValidRhymes = [currentRhymeGroup.word, ...currentRhymeGroup.rhymes];
     const normalizedInput = input.toLowerCase();
-    const isRhyme = allValidRhymes.some(rhyme => rhyme.toLowerCase() === normalizedInput);
+    
+    // The input cannot be the exact same word as the one given
+    const isSameWord = normalizedInput === gameState.currentWord.toLowerCase();
+    const isRhyme = !isSameWord && allValidRhymes.some(rhyme => rhyme.toLowerCase() === normalizedInput);
 
     if (isRhyme) {
       const settings = DIFFICULTY_SETTINGS[gameState.difficulty];
