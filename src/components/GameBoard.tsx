@@ -104,16 +104,20 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
 
         /* Input */
         .gb-input {
-          font-family:'Orbitron',monospace; font-size:22px; text-align:center;
-          width:100%; background:#060f1e; border:2px solid #1a3a6a; border-radius:10px;
-          padding:13px 16px; color:#c8e0ff; outline:none;
-          box-shadow:inset 0 0 14px rgba(0,40,100,0.3);
-          transition:border-color .2s,box-shadow .2s; letter-spacing:.06em;
+          font-family:'Orbitron',monospace; font-size:24px; text-align:center;
+          width:100%; background:transparent; border:none; border-radius:0;
+          padding:16px; color:#fff; outline:none; text-shadow:0 0 10px rgba(200,224,255,0.4);
+          transition:all .25s; letter-spacing:.1em;
+          caret-color:#00ff88; animation:gbCaretPulse 1.2s infinite ease-in-out;
         }
-        .gb-input::placeholder { color:#1a3a5a; font-size:16px; }
-        .gb-input:focus  { border-color:#00d4ff; box-shadow:0 0 0 3px rgba(0,180,255,0.15),inset 0 0 14px rgba(0,40,100,0.3); }
-        .gb-input.error  { border-color:#ff2a2a; box-shadow:0 0 0 3px rgba(255,30,30,0.2); color:#ff8888; animation:gbShake .45s ease-in-out; }
-        .gb-input.ok     { border-color:#00ff88; box-shadow:0 0 0 3px rgba(0,255,136,0.2); color:#00ff88; animation:gbPop .4s ease-out; }
+        @keyframes gbCaretPulse {
+          0%, 100% { caret-color: #00ff88; }
+          50% { caret-color: transparent; }
+        }
+        .gb-input::placeholder { color:#3a6a9a; font-size:16px; opacity:1; }
+        .gb-input:focus  { background:transparent; border:none; box-shadow:none; }
+        .gb-input.error  { color:#ff2a2a; animation:gbShake .45s ease-in-out; }
+        .gb-input.ok     { color:#00ff88; animation:gbPop .4s ease-out; }
         @keyframes gbShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
         @keyframes gbPop{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
 

@@ -48,7 +48,12 @@ export function PlayerRegistration({ playerName, onPlayerNameChange, error }: Pl
           width:100%;font-family:'Orbitron',monospace;font-size:20px;
           color:#c8e0ff;background:transparent;border:none;outline:none;
           padding:13px 52px 13px 16px;letter-spacing:.06em;
-          caret-color:#00d4ff;position:relative;z-index:1;
+          caret-color:#00ff88;position:relative;z-index:1;
+          animation:prCaretPulse 1.5s infinite;
+        }
+        @keyframes prCaretPulse {
+          0%, 100% { caret-color: #00ff88; }
+          50% { caret-color: transparent; }
         }
         .pr-input::placeholder { color:#1a3a5a;font-size:16px;font-family:'Exo 2',sans-serif; }
         
