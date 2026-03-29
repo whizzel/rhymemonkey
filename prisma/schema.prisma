@@ -22,7 +22,25 @@ model Player {
   
   games        GameSession[]
   
+  roomId       String?
+  room         Room?    @relation(fields: [roomId], references: [id])
+  
   @@map("players")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  hostId      String
+  difficulty  String   @default("medium")
+  timeLimit   Int      @default(60)
+  status      String   @default("waiting") // waiting, playing, finished
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  players     Player[]
+  
+  @@map("rooms")
 }
 
 model GameSession {

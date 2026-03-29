@@ -6,8 +6,8 @@ import { GameDashboard } from '@/components/GameDashboard';
 import { GameMenu } from '@/components/GameMenu';
 import { GameOver } from '@/components/GameOver';
 import { Leaderboard } from '@/components/Leaderboard';
-import { Room } from '@/components/Room';
-import type { Player } from '@/lib/types';
+import { Room as RoomView } from '@/components/Room';
+import type { Player, Room } from '@/lib/types';
 
 type GameView = 'menu' | 'room' | 'playing' | 'gameOver' | 'leaderboard';
 type GameMode = 'solo' | 'private' | null;
@@ -16,6 +16,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<GameView>('menu');
   const [playerName, setPlayerName] = useState('');
   const [player, setPlayer] = useState<Player | null>(null);
+  const [activeRoom, setActiveRoom] = useState<Room | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [selectedTime, setSelectedTime] = useState(60);
   const [error, setError] = useState('');
@@ -33,23 +34,96 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch('/api/players', {
+      // 1. Get or create player
+      const pResp = await fetch('/api/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: playerName.trim() })
       });
 
-      if (response.ok) {
-        const { player: createdPlayer } = await response.json();
-        setPlayer(createdPlayer);
-        setGameMode(mode);
-        setCurrentView('room');
-      } else {
-        const data = await response.json();
+      if (!pResp.ok) {
+        const data = await pResp.json();
         setError(data.error || 'Failed to create player');
+        return;
+      }
+
+      const { player: createdPlayer } = await pResp.json();
+      setPlayer(createdPlayer);
+      setGameMode(mode);
+
+      // 2. Handle Room
+      if (mode === 'private') {
+        const rResp = await fetch('/api/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'create', 
+            hostId: createdPlayer.id,
+            difficulty: selectedDifficulty,
+            timeLimit: selectedTime
+          })
+        });
+
+        if (rResp.ok) {
+          const { room } = await rResp.json();
+          setActiveRoom(room);
+          setCurrentView('room');
+        } else {
+          setError('Failed to create room');
+        }
+      } else {
+        setActiveRoom(null);
+        setCurrentView('room');
       }
     } catch {
       setError('Network error. Please try again.');
+    }
+  };
+
+  const handleJoinRoom = async (code: string) => {
+    setError('');
+    if (!playerName.trim()) {
+      setError('Please enter your name first');
+      return;
+    }
+
+    try {
+      // 1. Get or create player
+      const pResp = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: playerName.trim() })
+      });
+
+      if (!pResp.ok) {
+        const data = await pResp.json();
+        setError(data.error || 'Failed to identify player');
+        return;
+      }
+
+      const { player: createdPlayer } = await pResp.json();
+      setPlayer(createdPlayer);
+
+      // 2. Join Room
+      const rResp = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'join', code, playerId: createdPlayer.id })
+      });
+
+      if (rResp.ok) {
+        const { room } = await rResp.json();
+        setActiveRoom(room);
+        setGameMode('private');
+        setSelectedDifficulty(room.difficulty);
+        setSelectedTime(room.timeLimit);
+        setCurrentView('room');
+      } else {
+        const data = await rResp.json();
+        setError(data.error || 'Room not found');
+      }
+    } catch {
+      setError('Network error');
     }
   };
 
@@ -85,8 +159,9 @@ export default function Home() {
   // Render different views based on current state
   if (currentView === 'room') {
     return (
-      <Room
+      <RoomView
         player={player!}
+        room={activeRoom}
         gameMode={gameMode!}
         difficulty={selectedDifficulty}
         timeLimit={selectedTime}
@@ -169,6 +244,7 @@ export default function Home() {
       onDifficultyChange={setSelectedDifficulty}
       onTimeChange={setSelectedTime}
       onStartGame={handleStartGame}
+      onJoinRoom={handleJoinRoom}
     />
   );
 }

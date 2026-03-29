@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import type { Player, GameSession } from './types';
+import type { Player, GameSession, Room } from './types';
 
 // Get or create player
 export async function getOrCreatePlayer(name: string): Promise<Player> {
@@ -97,4 +97,123 @@ export async function getPlayerGameSessions(playerId: string, limit: number = 10
     difficulty: session.difficulty as 'easy' | 'medium' | 'hard', // Type assertion
     completedAt: session.completedAt.toISOString() // Convert Date to string
   }));
+}
+
+// --- Room Management ---
+
+export async function createRoom(hostId: string, difficulty: 'easy' | 'medium' | 'hard', timeLimit: number): Promise<Room> {
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  
+  const room = await prisma.room.create({
+    data: {
+      code,
+      hostId,
+      difficulty,
+      timeLimit,
+      status: 'waiting',
+      players: {
+        connect: { id: hostId }
+      }
+    },
+    include: {
+      players: true
+    }
+  });
+  
+  return {
+    ...room,
+    difficulty: room.difficulty as 'easy' | 'medium' | 'hard',
+    status: room.status as any,
+    createdAt: room.createdAt.toISOString(),
+    players: room.players.map(p => ({
+      ...p,
+      createdAt: p.createdAt.toISOString()
+    }))
+  };
+}
+
+export async function getRoomByCode(code: string): Promise<Room | null> {
+  const room = await prisma.room.findUnique({
+    where: { code: code.toUpperCase() },
+    include: {
+      players: true
+    }
+  });
+  
+  if (!room) return null;
+  
+  return {
+    ...room,
+    difficulty: room.difficulty as 'easy' | 'medium' | 'hard',
+    status: room.status as any,
+    createdAt: room.createdAt.toISOString(),
+    players: room.players.map(p => ({
+      ...p,
+      createdAt: p.createdAt.toISOString()
+    }))
+  };
+}
+
+export async function joinRoom(code: string, playerId: string): Promise<Room | null> {
+  const room = await prisma.room.findUnique({
+    where: { code: code.toUpperCase() }
+  });
+  
+  if (!room || room.status !== 'waiting') return null;
+  
+  const updatedRoom = await prisma.room.update({
+    where: { id: room.id },
+    data: {
+      players: {
+        connect: { id: playerId }
+      }
+    },
+    include: {
+      players: true
+    }
+  });
+  
+  return {
+    ...updatedRoom,
+    difficulty: updatedRoom.difficulty as 'easy' | 'medium' | 'hard',
+    status: updatedRoom.status as any,
+    createdAt: updatedRoom.createdAt.toISOString(),
+    players: updatedRoom.players.map(p => ({
+      ...p,
+      createdAt: p.createdAt.toISOString()
+    }))
+  };
+}
+
+export async function leaveRoom(playerId: string): Promise<void> {
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    select: { roomId: true }
+  });
+  
+  if (!player?.roomId) return;
+  
+  await prisma.player.update({
+    where: { id: playerId },
+    data: { roomId: null }
+  });
+  
+  // Cleanup empty rooms
+  const room = await prisma.room.findUnique({
+    where: { id: player.roomId },
+    include: { players: true }
+  });
+  
+  if (room && room.players.length === 0) {
+    await prisma.room.delete({
+      where: { id: room.id }
+    });
+  }
+}
+
+export async function updateRoomStatus(code: string, status: 'waiting' | 'playing' | 'finished'): Promise<void> {
+  await prisma.room.update({
+    where: { code: code.toUpperCase() },
+    data: { status }
+  });
 }

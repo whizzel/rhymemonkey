@@ -2,10 +2,11 @@
 // ─── Room.tsx ────────────────────────────────────────────────────────────────
 import { useState, useEffect } from 'react';
 import { MonkeyCharacter } from './MonkeyCharacter';
-import type { Player } from '@/lib/types';
+import type { Player, Room as RoomType } from '@/lib/types';
 
 interface RoomProps {
   player: Player;
+  room: RoomType | null;
   gameMode: 'solo' | 'private';
   difficulty: 'easy' | 'medium' | 'hard';
   timeLimit: number;
@@ -20,19 +21,71 @@ const DIFF_META = {
   hard: { label: 'HARD', color: '#cc1a1a' },
 };
 
-export function Room({ player, gameMode, difficulty, timeLimit, onStartGame, onBackToMenu, onGameStart }: RoomProps) {
-  const [roomCode, setRoomCode] = useState('');
-  const [players, setPlayers] = useState<Player[]>([player]);
-  const [copied, setCopied] = useState(false);
+export function Room({ player, room: initialRoom, gameMode, difficulty, timeLimit, onStartGame, onBackToMenu, onGameStart }: RoomProps) {
+  const [room, setRoom] = useState<RoomType | null>(initialRoom);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => { if (gameMode === 'private') setRoomCode(Math.random().toString(36).substring(2, 8).toUpperCase()); }, [gameMode]);
+  // Poll for room updates if in private mode
+  useEffect(() => {
+    if (gameMode !== 'private' || !room) return;
 
+    const poll = async () => {
+      try {
+        const resp = await fetch(`/api/rooms/${room.code}`);
+        if (resp.ok) {
+          const { room: updatedRoom } = await resp.json();
+          setRoom(updatedRoom);
+          
+          // If status changed to playing, start the countdown
+          if (updatedRoom.status === 'playing' && countdown === null) {
+            setCountdown(3);
+          }
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    };
+
+    const interval = setInterval(poll, 3000); // Poll every 3 seconds
+    return () => clearInterval(interval);
+  }, [gameMode, room, countdown]);
+
+  // Handle countdown and game start
   useEffect(() => {
     if (countdown === null) return;
     if (countdown > 0) { const t = setTimeout(() => setCountdown(c => (c ?? 1) - 1), 1000); return () => clearTimeout(t); }
     else { onStartGame(); onGameStart?.(); setCountdown(null); }
   }, [countdown, onStartGame, onGameStart]);
+
+  const handleStart = async () => {
+    if (gameMode === 'solo') {
+      setCountdown(3);
+    } else if (room) {
+      // Update room status on server
+      await fetch(`/api/rooms/${room.code}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'playing' })
+      });
+      // Polling will pick this up for other players
+    }
+  };
+
+  const handleExit = async () => {
+    if (gameMode === 'private' && room) {
+      await fetch(`/api/rooms/${room.code}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: player.id })
+      });
+    }
+    onBackToMenu();
+  };
+
+  const displayPlayers = room ? room.players : [player];
+  const displayCode = room ? room.code : '';
+  const isHost = room ? room.hostId === player.id : true;
 
   const diff = DIFF_META[difficulty];
 
@@ -103,9 +156,9 @@ export function Room({ player, gameMode, difficulty, timeLimit, onStartGame, onB
               {gameMode === 'private' && (
                 <div style={{ textAlign: 'center' }}>
                   <div className="r-code-lbl">// Share this code</div>
-                  <div className="r-code">{roomCode}</div>
+                  <div className="r-code">{displayCode}</div>
                   <button type="button" className={`r-copy-btn ${copied ? 'copied' : ''}`}
-                    onClick={() => { navigator.clipboard.writeText(roomCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+                    onClick={() => { if (displayCode) { navigator.clipboard.writeText(displayCode); setCopied(true); setTimeout(() => setCopied(false), 2000); } }}>
                     {copied ? '✓ COPIED' : '⊕ COPY CODE'}
                   </button>
                 </div>
@@ -119,7 +172,7 @@ export function Room({ player, gameMode, difficulty, timeLimit, onStartGame, onB
               </div>
 
               <div className="r-players">
-                {players.map((p, i) => (
+                {displayPlayers.map((p: Player, i: number) => (
                   <div key={p.id} className="r-chip" style={{ animationDelay: `${i * .08}s` }}>
                     🤖 {p.name}
                     {p.id === player.id && <span className="r-you">YOU</span>}
@@ -134,8 +187,10 @@ export function Room({ player, gameMode, difficulty, timeLimit, onStartGame, onB
               <div className="r-div" />
 
               <div className="r-btns">
-                <button type="button" className="r-btn rb-exit" onClick={onBackToMenu}>✕ EXIT</button>
-                <button type="button" className="r-btn rb-start" onClick={() => setCountdown(3)}>⚡ START</button>
+                <button type="button" className="r-btn rb-exit" onClick={handleExit}>✕ EXIT</button>
+                {isHost && (
+                  <button type="button" className="r-btn rb-start" onClick={handleStart}>⚡ START</button>
+                )}
               </div>
             </div>
           </div>

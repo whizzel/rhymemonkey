@@ -34,3 +34,16 @@ export interface GameState {
   timeLimit: number;
   gameMode: 'solo' | 'private';
 }
+
+export type RoomStatus = 'waiting' | 'playing' | 'finished';
+
+export interface Room {
+  id: string;
+  code: string;
+  hostId: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  timeLimit: number;
+  status: RoomStatus;
+  players: Player[];
+  createdAt: string;
+}

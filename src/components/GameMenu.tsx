@@ -13,6 +13,7 @@ interface GameMenuProps {
   onDifficultyChange: (difficulty: 'easy' | 'medium' | 'hard') => void;
   onTimeChange: (time: number) => void;
   onStartGame: (gameMode: 'solo' | 'private') => void;
+  onJoinRoom: (code: string) => void;
 }
 
 const particles = Array.from({ length: 28 }, (_, i) => ({
@@ -24,7 +25,7 @@ const particles = Array.from({ length: 28 }, (_, i) => ({
   color: i % 3 === 0 ? '#cc1a1a' : i % 3 === 1 ? '#00d4ff' : '#1a55cc',
 }));
 
-export function GameMenu({ playerName, selectedDifficulty, selectedTime, error, onPlayerNameChange, onDifficultyChange, onTimeChange, onStartGame }: GameMenuProps) {
+export function GameMenu({ playerName, selectedDifficulty, selectedTime, error, onPlayerNameChange, onDifficultyChange, onTimeChange, onStartGame, onJoinRoom }: GameMenuProps) {
   return (
     <>
       <style>{`
@@ -183,7 +184,7 @@ export function GameMenu({ playerName, selectedDifficulty, selectedTime, error, 
             {/* Right side: Player & Actions */}
             <div className="gm-col">
               <PlayerRegistration playerName={playerName} onPlayerNameChange={onPlayerNameChange} error={error} />
-              <GameActions onStartGame={onStartGame} />
+              <GameActions onStartGame={onStartGame} onJoinRoom={onJoinRoom} />
             </div>
           </div>
         </div>

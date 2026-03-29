@@ -1,13 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import { useAudio } from '@/context/AudioContext';
 
 interface GameActionsProps {
   onStartGame: (gameMode: 'solo' | 'private') => void;
+  onJoinRoom: (code: string) => void;
 }
 
-export function GameActions({ onStartGame }: GameActionsProps) {
+export function GameActions({ onStartGame, onJoinRoom }: GameActionsProps) {
   const { playClick } = useAudio();
+  const [showJoinInput, setShowJoinInput] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+
+  const handleJoin = () => {
+    if (joinCode.trim().length === 6) {
+      onJoinRoom(joinCode.trim().toUpperCase());
+      setJoinCode('');
+      setShowJoinInput(false);
+    }
+  };
 
   return (
     <>
@@ -45,19 +57,50 @@ export function GameActions({ onStartGame }: GameActionsProps) {
 
         .btn-solo    { background:linear-gradient(180deg,#cc1a1a,#8a0a0a);color:#fff;box-shadow:0 6px 0 #4a0505,0 8px 20px rgba(200,10,10,0.4); }
         .btn-private { background:linear-gradient(180deg,#1a55cc,#0a2a8a);color:#c8e0ff;box-shadow:0 6px 0 #050f40,0 8px 20px rgba(10,50,200,0.4); }
+        .btn-join    { background:linear-gradient(180deg,#1a2a40,#0d1525);color:#6a9ac0;box-shadow:0 6px 0 #060c18; border:1px solid #1a3a6a; }
+
+        .ga-join-box { margin-top: 10px; display: flex; gap: 8px; animation: slideDown .3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .ga-input { flex: 1; background: #060f1e; border: 1px solid #1a3a6a; border-radius: 6px; padding: 10px; color: #fff; font-family: 'Orbitron', monospace; text-align: center; font-size: 16px; outline: none; }
+        .ga-go { background: #cc1a1a; border: none; border-radius: 6px; color: #fff; padding: 0 20px; font-family: 'Orbitron', monospace; cursor: pointer; font-weight: 700; }
+        .ga-go:disabled { opacity: .5; cursor: not-allowed; }
       `}</style>
 
-      <div className="ga-grid">
-        <button type="button" className="ga-btn btn-solo" onClick={() => { playClick(); onStartGame('solo'); }}>
-          <span className="ga-icon">🤖</span>
-          <span className="ga-label">PLAY SOLO</span>
-          <span className="ga-sub">single player</span>
-        </button>
-        <button type="button" className="ga-btn btn-private" onClick={() => { playClick(); onStartGame('private'); }}>
-          <span className="ga-icon">🎮</span>
-          <span className="ga-label">PRIVATE</span>
-          <span className="ga-sub">invite friends</span>
-        </button>
+      <div>
+        <div className="ga-grid">
+          <button type="button" className="ga-btn btn-solo" onClick={() => { playClick(); onStartGame('solo'); }}>
+            <span className="ga-icon">🤖</span>
+            <span className="ga-label">PLAY SOLO</span>
+            <span className="ga-sub">single player</span>
+          </button>
+          {!showJoinInput ? (
+            <button type="button" className="ga-btn btn-private" onClick={() => { playClick(); setShowJoinInput(true); }}>
+              <span className="ga-icon">🎮</span>
+              <span className="ga-label">JOIN ROOM</span>
+              <span className="ga-sub">enter code</span>
+            </button>
+          ) : (
+            <button type="button" className="ga-btn btn-private" onClick={() => { playClick(); onStartGame('private'); }}>
+              <span className="ga-icon">📡</span>
+              <span className="ga-label">CREATE RM</span>
+              <span className="ga-sub">host lobby</span>
+            </button>
+          )}
+        </div>
+
+        {showJoinInput && (
+          <div className="ga-join-box">
+            <input 
+              className="ga-input" 
+              placeholder="CODE" 
+              value={joinCode} 
+              onChange={e => setJoinCode(e.target.value.toUpperCase())}
+              maxLength={6}
+            />
+            <button className="ga-go" onClick={handleJoin} disabled={joinCode.length < 6}>GO</button>
+            <button className="ga-go" style={{ background: '#1a3a6a' }} onClick={() => setShowJoinInput(false)}>✕</button>
+          </div>
+        )}
       </div>
     </>
   );
