@@ -4,11 +4,9 @@ import { useAudio } from '@/context/AudioContext';
 import { GameBoard } from './GameBoard';
 import { Leaderboard } from './Leaderboard';
 import type { GameState, Player } from '@/lib/types';
-import type { RhymeGroup } from '@/lib/rhymingWords';
 
 interface GameDashboardProps {
   gameState: GameState;
-  currentRhymeGroup: RhymeGroup | null;
   showError: boolean;
   showSuccess: boolean;
   player: Player | null;
@@ -29,10 +27,8 @@ const particles = Array.from({ length: 20 }, (_, i) => ({
   color: i % 2 === 0 ? '#cc1a1a' : '#1a55cc',
 }));
 
-export function GameDashboard({ gameState, currentRhymeGroup, showError, showSuccess, player, onInput, onSubmit, onSkip, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
+export function GameDashboard({ gameState, showError, showSuccess, player, onInput, onSubmit, onSkip, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
   const { playClick } = useAudio();
-  const isLow = gameState.timeRemaining <= 10;
-  const isMid = gameState.timeRemaining <= 30;
 
   return (
     <>
@@ -183,7 +179,7 @@ export function GameDashboard({ gameState, currentRhymeGroup, showError, showSuc
               </div>
             </div>
           </div>
-          <div className="gd-footer">// RHYMEMONKEY — by @aarushe_reddy</div>
+          <div className="gd-footer">RHYMEMONKEY — by @dhani shende</div>
         </div>
       </div>
     </>

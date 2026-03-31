@@ -136,7 +136,7 @@ export function RoomDashboard({ roomCode, players, currentWord, timeLeft, attemp
             <div className="rd-body">
 
               <div className="rd-code-wrap">
-                <div className="rd-code-lbl">// Room</div>
+                <div className="rd-code-lbl">Room</div>
                 <div className="rd-code">{roomCode}</div>
               </div>
 
@@ -155,7 +155,7 @@ export function RoomDashboard({ roomCode, players, currentWord, timeLeft, attemp
                 <>
                   <div className="rd-game-row">
                     <div className="rd-word-panel" style={{ flex: 1 }}>
-                      <div className="rd-wlbl">// Rhyme this word</div>
+                      <div className="rd-wlbl">Rhyme this word</div>
                       <div className="rd-word">{currentWord.toUpperCase()}</div>
                     </div>
                     <MonkeyCharacter mood="excited" size={96} />
@@ -182,7 +182,7 @@ export function RoomDashboard({ roomCode, players, currentWord, timeLeft, attemp
               ) : (
                 <div className="rd-waiting">
                   <MonkeyCharacter mood="idle" size={100} />
-                  <div className="rd-wtitle">// STANDBY</div>
+                  <div className="rd-wtitle">STANDBY</div>
                   <div className="rd-wsub">Waiting for players<span><span>.</span><span>.</span><span>.</span></span></div>
                   {players.length >= 1 && (
                     <button type="button" className="rd-start" onClick={onStartGame}>⚡ INITIALIZE GAME</button>
@@ -193,7 +193,7 @@ export function RoomDashboard({ roomCode, players, currentWord, timeLeft, attemp
             </div>
           </div>
 
-          <div className="rd-footer">// RHYMEMONKEY — by @aarushe_reddy</div>
+          <div className="rd-footer">RHYMEMONKEY — by @dhani_shende</div>
         </div>
       </div>
     </>

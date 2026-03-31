@@ -40,7 +40,7 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
       setScorePop(true); setLastScore(gameState.score);
       setTimeout(() => setScorePop(false), 380);
     }
-  }, [gameState.score]);
+  }, [gameState.score, lastScore]);
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   const isLow = gameState.timeRemaining <= 10;
@@ -114,7 +114,7 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
           0%, 100% { caret-color: #00ff88; }
           50% { caret-color: transparent; }
         }
-        .gb-input::placeholder { color:#3a6a9a; font-size:16px; opacity:1; }
+        .gb-input::placeholder { color:#6a9ac0; font-size:16px; opacity:0.8; }
         .gb-input:focus  { background:transparent; border:none; box-shadow:none; }
         .gb-input.error  { color:#ff2a2a; animation:gbShake .45s ease-in-out; }
         .gb-input.ok     { color:#00ff88; animation:gbPop .4s ease-out; }
@@ -230,7 +230,7 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
           <div className="gb-pause">
             <div style={{ textAlign: 'center' }}>
               <MonkeyCharacter mood="idle" size={100} />
-              <div className="gb-pause-title">// PAUSED</div>
+              <div className="gb-pause-title">PAUSED</div>
               <button type="button" className="gb-btn btn-submit" style={{ fontSize: 16, padding: '14px 36px' }} onClick={onPause}>▶ RESUME</button>
             </div>
           </div>

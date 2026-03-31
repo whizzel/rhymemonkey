@@ -101,7 +101,7 @@ export function Room({ player, room: initialRoom, gameMode, difficulty, timeLimi
       `}</style>
       <div className="room-cd-bg">
         <MonkeyCharacter mood="excited" size={110} />
-        <div className="room-cd-lbl">// Initializing...</div>
+        <div className="room-cd-lbl">Initializing...</div>
         <div key={countdown} className="room-cd-num">{countdown}</div>
       </div>
     </>
@@ -155,7 +155,7 @@ export function Room({ player, room: initialRoom, gameMode, difficulty, timeLimi
 
               {gameMode === 'private' && (
                 <div style={{ textAlign: 'center' }}>
-                  <div className="r-code-lbl">// Share this code</div>
+                  <div className="r-code-lbl">Share this code</div>
                   <div className="r-code">{displayCode}</div>
                   <button type="button" className={`r-copy-btn ${copied ? 'copied' : ''}`}
                     onClick={() => { if (displayCode) { navigator.clipboard.writeText(displayCode); setCopied(true); setTimeout(() => setCopied(false), 2000); } }}>
@@ -194,7 +194,7 @@ export function Room({ player, room: initialRoom, gameMode, difficulty, timeLimi
               </div>
             </div>
           </div>
-          <div className="room-footer">// RHYMEMONKEY — by @aarushe_reddy</div>
+          <div className="room-footer">RHYMEMONKEY — by @dhani_shende</div>
         </div>
       </div>
     </>

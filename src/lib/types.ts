@@ -47,3 +47,13 @@ export interface Room {
   players: Player[];
   createdAt: string;
 }
+
+export interface RhymeGroup {
+  word: string;
+  rhymes: string[];
+}
+
+export interface RhymeBrainResponse {
+  word: string;
+  score: number;
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { GameState, Player, GameSession } from '@/lib/types';
-import { getRandomRhymeGroup, getRandomWordFromGroup, type RhymeGroup } from '@/lib/rhymingWords';
+import type { GameState, Player, GameSession, RhymeGroup } from '@/lib/types';
+import { getRandomRhymeGroup, getRandomWordFromGroup } from '@/lib/rhymingWords';
 
 const DIFFICULTY_SETTINGS = {
   easy: { timeMultiplier: 1.2, scoreMultiplier: 1, wordComplexity: 'simple' },
@@ -25,6 +25,7 @@ export function useGameState() {
   });
 
   const [currentRhymeGroup, setCurrentRhymeGroup] = useState<RhymeGroup | null>(null);
+  const [nextRhymeGroup, setNextRhymeGroup] = useState<RhymeGroup | null>(null);
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +80,7 @@ export function useGameState() {
     }
 
     return () => clearInterval(interval);
-  }, [gameState.isPlaying, gameState.isPaused, gameState.timeRemaining, endGame]);
+  }, [gameState.isPlaying, gameState.isPaused, gameState.timeRemaining, endGame, isLoading]);
 
   const startGame = useCallback(async (playerData: Player, difficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameMode: 'solo' | 'private') => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
@@ -102,11 +103,13 @@ export function useGameState() {
       gameMode
     });
 
-    // Get a random rhyme group and word async
+    // Get current and next rhyme groups async
     const rhymeGroup = await getRandomRhymeGroup(difficulty);
+    const nextGroup = await getRandomRhymeGroup(difficulty);
     const firstWord = getRandomWordFromGroup(rhymeGroup);
     
     setCurrentRhymeGroup(rhymeGroup);
+    setNextRhymeGroup(nextGroup);
     setGameState(prev => ({
       ...prev,
       currentWord: firstWord
@@ -145,28 +148,53 @@ export function useGameState() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 500);
 
-      // Indicate loading next word
-      setIsLoading(true);
-      setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
+      // Use pre-loaded next word if available, otherwise load new one
+      if (nextRhymeGroup) {
+        const newWord = getRandomWordFromGroup(nextRhymeGroup);
+        
+        setCurrentRhymeGroup(nextRhymeGroup);
+        setGameState(prev => {
+          const nextWordsCompleted = prev.wordsCompleted + 1;
+          const nextTotalAttempts = prev.totalAttempts + 1;
+          return {
+            ...prev,
+            score: prev.score + points,
+            wordsCompleted: nextWordsCompleted,
+            totalAttempts: nextTotalAttempts,
+            accuracy: Math.round((nextWordsCompleted / nextTotalAttempts) * 100),
+            currentWord: newWord,
+            userInput: ''
+          };
+        });
+        
+        // Pre-load next word in background
+        getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+      } else {
+        // Fallback: load new word if next not available
+        setIsLoading(true);
+        setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
 
-      // Get new rhyme group and word for next round
-      const newRhymeGroup = await getRandomRhymeGroup(gameState.difficulty);
-      const newWord = getRandomWordFromGroup(newRhymeGroup);
-      
-      setCurrentRhymeGroup(newRhymeGroup);
-      setGameState(prev => {
-        const nextWordsCompleted = prev.wordsCompleted + 1;
-        const nextTotalAttempts = prev.totalAttempts + 1;
-        return {
-          ...prev,
-          score: prev.score + points,
-          wordsCompleted: nextWordsCompleted,
-          totalAttempts: nextTotalAttempts,
-          accuracy: Math.round((nextWordsCompleted / nextTotalAttempts) * 100),
-          currentWord: newWord
-        };
-      });
-      setIsLoading(false);
+        const newRhymeGroup = await getRandomRhymeGroup(gameState.difficulty);
+        const newWord = getRandomWordFromGroup(newRhymeGroup);
+        
+        setCurrentRhymeGroup(newRhymeGroup);
+        setGameState(prev => {
+          const nextWordsCompleted = prev.wordsCompleted + 1;
+          const nextTotalAttempts = prev.totalAttempts + 1;
+          return {
+            ...prev,
+            score: prev.score + points,
+            wordsCompleted: nextWordsCompleted,
+            totalAttempts: nextTotalAttempts,
+            accuracy: Math.round((nextWordsCompleted / nextTotalAttempts) * 100),
+            currentWord: newWord
+          };
+        });
+        setIsLoading(false);
+        
+        // Pre-load next word for future
+        getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+      }
     } else {
       // Show error for wrong word
       setShowError(true);
@@ -181,30 +209,53 @@ export function useGameState() {
         };
       });
     }
-  }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, gameState.userInput, currentRhymeGroup]);
+  }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, gameState.userInput, gameState.currentWord, currentRhymeGroup, nextRhymeGroup]);
 
   const handleSkip = useCallback(async () => {
     if (!gameState.isPlaying || gameState.isPaused || isLoading || !currentRhymeGroup) return;
 
-    setIsLoading(true);
-    setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
+    // Use pre-loaded next word if available, otherwise load new one
+    if (nextRhymeGroup) {
+      const newWord = getRandomWordFromGroup(nextRhymeGroup);
+      
+      setCurrentRhymeGroup(nextRhymeGroup);
+      setGameState(prev => {
+        const nextTotalAttempts = prev.totalAttempts + 1;
+        return {
+          ...prev,
+          userInput: '',
+          totalAttempts: nextTotalAttempts,
+          accuracy: Math.round((prev.wordsCompleted / nextTotalAttempts) * 100),
+          currentWord: newWord
+        };
+      });
+      
+      // Pre-load next word in background
+      getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+    } else {
+      // Fallback: load new word if next not available
+      setIsLoading(true);
+      setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
 
-    // Get new rhyme group and word
-    const newRhymeGroup = await getRandomRhymeGroup(gameState.difficulty);
-    const newWord = getRandomWordFromGroup(newRhymeGroup);
-    
-    setCurrentRhymeGroup(newRhymeGroup);
-    setGameState(prev => {
-      const nextTotalAttempts = prev.totalAttempts + 1;
-      return {
-        ...prev,
-        totalAttempts: nextTotalAttempts,
-        accuracy: Math.round((prev.wordsCompleted / nextTotalAttempts) * 100),
-        currentWord: newWord
-      };
-    });
-    setIsLoading(false);
-  }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, currentRhymeGroup]);
+      const newRhymeGroup = await getRandomRhymeGroup(gameState.difficulty);
+      const newWord = getRandomWordFromGroup(newRhymeGroup);
+      
+      setCurrentRhymeGroup(newRhymeGroup);
+      setGameState(prev => {
+        const nextTotalAttempts = prev.totalAttempts + 1;
+        return {
+          ...prev,
+          totalAttempts: nextTotalAttempts,
+          accuracy: Math.round((prev.wordsCompleted / nextTotalAttempts) * 100),
+          currentWord: newWord
+        };
+      });
+      setIsLoading(false);
+      
+      // Pre-load next word for future
+      getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+    }
+  }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, currentRhymeGroup, nextRhymeGroup]);
 
   const resetGame = useCallback(() => {
     setGameState({
@@ -221,6 +272,8 @@ export function useGameState() {
       timeLimit: 60,
       gameMode: 'solo'
     });
+    setCurrentRhymeGroup(null);
+    setNextRhymeGroup(null);
   }, []);
 
   return {

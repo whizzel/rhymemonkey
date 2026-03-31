@@ -14,9 +14,13 @@ model Player {
   totalGames   Int           @default(0)
   highScore    Int           @default(0)
   averageScore Float         @default(0)
+  ranking      Int           @default(0)
   games        GameSession[]
+  hostedRooms  Room[]        @relation("HostedRooms")
+  joinedRooms  Room[]        @relation("JoinedRooms")
 
   @@map("players")
+  @@index([ranking])
 }
 
 model GameSession {
@@ -33,4 +37,18 @@ model GameSession {
   player         Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@map("game_sessions")
+}
+
+model Room {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  hostId     String
+  difficulty String
+  timeLimit  Int
+  status     String   @default("waiting")
+  createdAt  DateTime @default(now())
+  players    Player[] @relation("JoinedRooms")
+  host       Player   @relation("HostedRooms", fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@map("rooms")
 }
