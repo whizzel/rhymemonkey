@@ -172,7 +172,7 @@ export function GameDashboard({ gameState, showError, showSuccess, isNextLoading
                   <div className="dp-head" style={{ padding: 0, border: 'none', flex: 1 }}>🏆 Rankings</div>
                   <button type="button" className="gd-view" onClick={onShowLeaderboard}>View all</button>
                 </div>
-                <div className="dp-body"><Leaderboard limit={5} /></div>
+                <div className="dp-body"><Leaderboard limit={3} /></div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

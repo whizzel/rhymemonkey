@@ -52,7 +52,7 @@ export function Leaderboard({ limit = 10 }: LeaderboardProps) {
         .lb-loading{text-align:center;padding:40px 0;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#3a6a9a;animation:lbPulse 1.5s infinite;}
         @keyframes lbPulse{0%,100%{opacity:.5}50%{opacity:1}}
 
-        .lb-prow { display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #0d1f35;transition:background .2s,transform .15s; }
+        .lb-prow { display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid #0d1f35;transition:background .2s,transform .15s; }
         .lb-prow:last-child{border-bottom:none;}
         .lb-prow:hover{background:rgba(26,85,204,0.05);transform:translateX(4px);}
         
