@@ -107,7 +107,7 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         .gb-input {
           font-family:'Orbitron',monospace; font-size:24px; text-align:center;
           width:100%; background:transparent; border:none; border-radius:0;
-          padding:16px; color:#fff; outline:none; text-shadow:0 0 10px rgba(200,224,255,0.4);
+          padding:16px 80px; color:#fff; outline:none; text-shadow:0 0 10px rgba(200,224,255,0.4);
           transition:all .25s; letter-spacing:.1em;
           caret-color:#00ff88; animation:gbCaretPulse 1.2s infinite ease-in-out;
         }
@@ -121,6 +121,15 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         .gb-input.ok     { color:#00ff88; animation:gbPop .4s ease-out; }
         @keyframes gbShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
         @keyframes gbPop{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+
+        /* Input Wrap */
+        .gb-input-wrap {
+          position:relative; width:100%;
+          background:#060f1e; border:1px solid #1a3a6a; border-radius:12px;
+          box-shadow:inset 0 0 15px rgba(0,40,100,0.1);
+          overflow:hidden;
+        }
+        .gb-input-wrap:focus-within { border-color:#1a55cc; box-shadow:0 0 15px rgba(26,85,204,0.2), inset 0 0 15px rgba(0,40,100,0.1); }
 
         /* Flash */
         .gb-flash { position:absolute;inset:0;border-radius:14px;pointer-events:none;z-index:10;animation:flashOut .5s ease-out forwards; }
@@ -152,18 +161,18 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         .btn-submit { flex:1; background:linear-gradient(180deg,#cc1a1a,#8a0a0a); color:#fff; box-shadow:0 4px 0 #4a0505,0 5px 14px rgba(200,10,10,0.4); font-size:15px; }
         .btn-pause  { background:linear-gradient(180deg,#1a55cc,#0a2a8a); color:#c8e0ff; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(10,50,200,0.4); border:1px solid #2a4a9a; }
 
-        /* Hint msg */
-        .gb-hint-msg {
-          position:absolute; bottom:84px; left:50%; transform:translateX(-50%);
-          background:rgba(255,170,0,0.15); border:1px solid rgba(255,170,0,0.3);
-          padding:6px 14px; border-radius:20px;
-          font-family:'Orbitron',monospace; font-size:11px; font-weight:700;
-          color:#ffaa00; text-shadow:0 0 8px rgba(255,170,0,0.4);
+        /* Hint tag */
+        .gb-hint-tag {
+          position:absolute; right:12px; top:50%; transform:translateY(-50%);
+          background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.2);
+          padding:5px 10px; border-radius:6px;
+          font-family:'Orbitron',monospace; font-size:10px; font-weight:700;
+          color:#ffaa00; text-shadow:0 0 8px rgba(255,170,0,0.3);
           white-space:nowrap; pointer-events:none; z-index:5;
-          animation:hintSlideUp 0.3s ease-out;
+          animation: fadeIn .3s ease;
           text-transform:uppercase; letter-spacing:0.05em;
         }
-        @keyframes hintSlideUp { from { opacity:0; transform:translate(-50%, 10px); } to { opacity:1; transform:translate(-50%, 0); } }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
         /* Sound Toggle */
         .gb-sound-opt { position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:6px; z-index:15; }
@@ -218,24 +227,25 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
           <MonkeyCharacter mood={getMood(showError, showSuccess)} size={108} />
         </div>
 
-        <input
-          ref={inputRef}
-          type="text"
-          value={gameState.userInput}
-          onChange={e => { onInput(e.target.value); playTap(); }}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              playClick();
-              onSubmit();
-            }
-          }}
-          className={`gb-input ${showError ? 'error' : showSuccess ? 'ok' : ''}`}
-          placeholder="enter your rhyme..."
-          disabled={!gameState.isPlaying || gameState.isPaused}
-        />
-
-        {gameState.hint && <div className="gb-hint-msg">💡 {gameState.hint}</div>}
+        <div className="gb-input-wrap">
+          <input
+            ref={inputRef}
+            type="text"
+            value={gameState.userInput}
+            onChange={e => { onInput(e.target.value); playTap(); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                playClick();
+                onSubmit();
+              }
+            }}
+            className={`gb-input ${showError ? 'error' : showSuccess ? 'ok' : ''}`}
+            placeholder="enter your rhyme..."
+            disabled={!gameState.isPlaying || gameState.isPaused}
+          />
+          {gameState.hint && <div className="gb-hint-tag">💡 {gameState.hint}</div>}
+        </div>
 
         <div className="gb-btns">
           <button type="button" className="gb-btn btn-skip" onClick={() => { playClick(); onSkip(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⏭ SKIP</button>
