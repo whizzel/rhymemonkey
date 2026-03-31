@@ -22,7 +22,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [gameMode, setGameMode] = useState<GameMode>(null);
 
-  const { gameState, showError, showSuccess, isNextLoading, startGame, pauseGame, handleInputChange, handleSubmitWord, handleSkip, resetGame } = useGameState();
+  const { gameState, showError, showSuccess, isNextLoading, startGame, pauseGame, handleInputChange, handleSubmitWord, handleSkip, handleHint, resetGame } = useGameState();
 
   const handleStartGame = async (mode: 'solo' | 'private') => {
     setError('');
@@ -195,6 +195,7 @@ export default function Home() {
         onInput={handleInputChange}
         onSubmit={handleSubmitWord}
         onSkip={handleSkip}
+        onHint={handleHint}
         onPause={pauseGame}
         onBackToMenu={handleBackToMenu}
         onShowLeaderboard={handleShowLeaderboard}

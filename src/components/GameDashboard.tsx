@@ -14,6 +14,7 @@ interface GameDashboardProps {
   onInput: (input: string) => void;
   onSubmit: () => void;
   onSkip: () => void;
+  onHint: () => void;
   onPause: () => void;
   onBackToMenu: () => void;
   onShowLeaderboard: () => void;
@@ -28,7 +29,7 @@ const particles = Array.from({ length: 20 }, (_, i) => ({
   color: i % 2 === 0 ? '#cc1a1a' : '#1a55cc',
 }));
 
-export function GameDashboard({ gameState, showError, showSuccess, isNextLoading, player, onInput, onSubmit, onSkip, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
+export function GameDashboard({ gameState, showError, showSuccess, isNextLoading, player, onInput, onSubmit, onSkip, onHint, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
   const { playClick } = useAudio();
 
   return (
@@ -142,7 +143,7 @@ export function GameDashboard({ gameState, showError, showSuccess, isNextLoading
 
             <div className="dp">
               <div className="gd-board-wrap">
-                <GameBoard gameState={gameState} showError={showError} showSuccess={showSuccess} onInput={onInput} onSubmit={onSubmit} onSkip={onSkip} onPause={onPause} />
+                <GameBoard gameState={gameState} showError={showError} showSuccess={showSuccess} onInput={onInput} onSubmit={onSubmit} onSkip={onSkip} onHint={onHint} onPause={onPause} />
               </div>
             </div>
 

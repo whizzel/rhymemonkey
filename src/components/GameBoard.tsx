@@ -13,6 +13,7 @@ interface GameBoardProps {
   onInput: (value: string) => void;
   onSubmit: () => void;
   onSkip: () => void;
+  onHint: () => void;
   onPause: () => void;
 }
 
@@ -22,7 +23,7 @@ function getMood(err: boolean, ok: boolean): MonkeyMood {
   return 'idle';
 }
 
-export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit, onSkip, onPause }: GameBoardProps) {
+export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit, onSkip, onHint, onPause }: GameBoardProps) {
   const { isMuted, toggleMute, playClick, playTap } = useAudio();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -147,8 +148,22 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         .gb-btn:hover::after { left:130%; }
 
         .btn-skip   { background:linear-gradient(180deg,#1a3a5a,#0d1f35); color:#6a9ac0; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(0,0,0,0.5); border:1px solid #1a3a6a; }
+        .btn-hint   { background:linear-gradient(180deg,#ffaa00,#cc7700); color:#fff; box-shadow:0 4px 0 #663300,0 5px 14px rgba(255,170,0,0.3); }
         .btn-submit { flex:1; background:linear-gradient(180deg,#cc1a1a,#8a0a0a); color:#fff; box-shadow:0 4px 0 #4a0505,0 5px 14px rgba(200,10,10,0.4); font-size:15px; }
         .btn-pause  { background:linear-gradient(180deg,#1a55cc,#0a2a8a); color:#c8e0ff; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(10,50,200,0.4); border:1px solid #2a4a9a; }
+
+        /* Hint msg */
+        .gb-hint-msg {
+          position:absolute; bottom:84px; left:50%; transform:translateX(-50%);
+          background:rgba(255,170,0,0.15); border:1px solid rgba(255,170,0,0.3);
+          padding:6px 14px; border-radius:20px;
+          font-family:'Orbitron',monospace; font-size:11px; font-weight:700;
+          color:#ffaa00; text-shadow:0 0 8px rgba(255,170,0,0.4);
+          white-space:nowrap; pointer-events:none; z-index:5;
+          animation:hintSlideUp 0.3s ease-out;
+          text-transform:uppercase; letter-spacing:0.05em;
+        }
+        @keyframes hintSlideUp { from { opacity:0; transform:translate(-50%, 10px); } to { opacity:1; transform:translate(-50%, 0); } }
 
         /* Sound Toggle */
         .gb-sound-opt { position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:6px; z-index:15; }
@@ -220,8 +235,11 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
           disabled={!gameState.isPlaying || gameState.isPaused}
         />
 
+        {gameState.hint && <div className="gb-hint-msg">💡 {gameState.hint}</div>}
+
         <div className="gb-btns">
           <button type="button" className="gb-btn btn-skip" onClick={() => { playClick(); onSkip(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⏭ SKIP</button>
+          <button type="button" className="gb-btn btn-hint" onClick={() => { playClick(); onHint(); }} disabled={!gameState.isPlaying || gameState.isPaused || !!gameState.hint}>💡 HINT</button>
           <button type="button" className="gb-btn btn-submit" onClick={() => { playClick(); onSubmit(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⚡ SUBMIT</button>
           <button type="button" className="gb-btn btn-pause" onClick={() => { playClick(); onPause(); }} disabled={!gameState.isPlaying}>{gameState.isPaused ? '▶' : '⏸'}</button>
         </div>
