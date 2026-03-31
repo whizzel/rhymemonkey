@@ -9,6 +9,7 @@ interface GameDashboardProps {
   gameState: GameState;
   showError: boolean;
   showSuccess: boolean;
+  isNextLoading: boolean;
   player: Player | null;
   onInput: (input: string) => void;
   onSubmit: () => void;
@@ -27,7 +28,7 @@ const particles = Array.from({ length: 20 }, (_, i) => ({
   color: i % 2 === 0 ? '#cc1a1a' : '#1a55cc',
 }));
 
-export function GameDashboard({ gameState, showError, showSuccess, player, onInput, onSubmit, onSkip, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
+export function GameDashboard({ gameState, showError, showSuccess, isNextLoading, player, onInput, onSubmit, onSkip, onPause, onBackToMenu, onShowLeaderboard }: GameDashboardProps) {
   const { playClick } = useAudio();
 
   return (
@@ -125,8 +126,8 @@ export function GameDashboard({ gameState, showError, showSuccess, player, onInp
 
       <div className="gd-hud">
         <div className="gd-hud-dot" style={{ background: '#cc1a1a', boxShadow: '0 0 6px #ff2a2a' }} />
-        RHYMEMONKEY — LIVE
-        <div className="gd-hud-dot" style={{ background: '#00ff88', boxShadow: '0 0 6px #00ff88' }} />
+        {isNextLoading ? 'SYNCING RHYMES...' : 'RHYMEMONKEY — LIVE'}
+        <div className="gd-hud-dot" style={{ background: isNextLoading ? '#ffaa00' : '#00ff88', boxShadow: isNextLoading ? '0 0 6px #ffaa00' : '0 0 6px #00ff88', animation: isNextLoading ? 'pulse 1s infinite' : 'none' }} />
       </div>
 
       <div className="gd-particles">

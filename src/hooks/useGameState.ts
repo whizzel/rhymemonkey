@@ -26,6 +26,7 @@ export function useGameState() {
 
   const [currentRhymeGroup, setCurrentRhymeGroup] = useState<RhymeGroup | null>(null);
   const [nextRhymeGroup, setNextRhymeGroup] = useState<RhymeGroup | null>(null);
+  const [isNextLoading, setIsNextLoading] = useState(false);
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,18 +104,23 @@ export function useGameState() {
       gameMode
     });
 
-    // Get current and next rhyme groups async
+    // Only wait for the FIRST rhyme group to start
     const rhymeGroup = await getRandomRhymeGroup(difficulty);
-    const nextGroup = await getRandomRhymeGroup(difficulty);
     const firstWord = getRandomWordFromGroup(rhymeGroup);
     
     setCurrentRhymeGroup(rhymeGroup);
-    setNextRhymeGroup(nextGroup);
     setGameState(prev => ({
       ...prev,
       currentWord: firstWord
     }));
     setIsLoading(false);
+
+    // Fetch the NEXT word in the background immediately
+    setIsNextLoading(true);
+    getRandomRhymeGroup(difficulty).then(group => {
+      setNextRhymeGroup(group);
+      setIsNextLoading(false);
+    });
   }, []);
 
   const pauseGame = useCallback(() => {
@@ -152,7 +158,10 @@ export function useGameState() {
       if (nextRhymeGroup) {
         const newWord = getRandomWordFromGroup(nextRhymeGroup);
         
-        setCurrentRhymeGroup(nextRhymeGroup);
+        const usedGroup = nextRhymeGroup;
+        setCurrentRhymeGroup(usedGroup);
+        setNextRhymeGroup(null); // Clear it as it's now current
+        
         setGameState(prev => {
           const nextWordsCompleted = prev.wordsCompleted + 1;
           const nextTotalAttempts = prev.totalAttempts + 1;
@@ -168,9 +177,13 @@ export function useGameState() {
         });
         
         // Pre-load next word in background
-        getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+        setIsNextLoading(true);
+        getRandomRhymeGroup(gameState.difficulty).then(group => {
+          setNextRhymeGroup(group);
+          setIsNextLoading(false);
+        });
       } else {
-        // Fallback: load new word if next not available
+        // Fallback: load new word if next not available yet
         setIsLoading(true);
         setGameState(prev => ({ ...prev, currentWord: 'Loading...', userInput: '' }));
 
@@ -193,7 +206,11 @@ export function useGameState() {
         setIsLoading(false);
         
         // Pre-load next word for future
-        getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+        setIsNextLoading(true);
+        getRandomRhymeGroup(gameState.difficulty).then(group => {
+          setNextRhymeGroup(group);
+          setIsNextLoading(false);
+        });
       }
     } else {
       // Show error for wrong word
@@ -231,7 +248,11 @@ export function useGameState() {
       });
       
       // Pre-load next word in background
-      getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+      setIsNextLoading(true);
+      getRandomRhymeGroup(gameState.difficulty).then(group => {
+        setNextRhymeGroup(group);
+        setIsNextLoading(false);
+      });
     } else {
       // Fallback: load new word if next not available
       setIsLoading(true);
@@ -253,7 +274,11 @@ export function useGameState() {
       setIsLoading(false);
       
       // Pre-load next word for future
-      getRandomRhymeGroup(gameState.difficulty).then(setNextRhymeGroup);
+      setIsNextLoading(true);
+      getRandomRhymeGroup(gameState.difficulty).then(group => {
+        setNextRhymeGroup(group);
+        setIsNextLoading(false);
+      });
     }
   }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, currentRhymeGroup, nextRhymeGroup]);
 
@@ -279,6 +304,7 @@ export function useGameState() {
   return {
     gameState,
     isLoading,
+    isNextLoading,
     currentRhymeGroup,
     showError,
     showSuccess,

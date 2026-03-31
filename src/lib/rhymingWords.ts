@@ -5642,25 +5642,65 @@ const EASY_RHYME_GROUPS = createRhymeGroups(EASY_WORDS);
 const MEDIUM_RHYME_GROUPS = createRhymeGroups(MEDIUM_WORDS);
 const HARD_RHYME_GROUPS = createRhymeGroups(HARD_WORDS);
 
-export async function getRandomRhymeGroup(difficulty: "easy" | "medium" | "hard"): Promise<RhymeGroup> {
-  const rhymeGroups = difficulty === "easy" ? EASY_RHYME_GROUPS :
-                     difficulty === "medium" ? MEDIUM_RHYME_GROUPS :
-                     HARD_RHYME_GROUPS;
-  
-  // If we have pre-computed groups, use them
-  if (rhymeGroups.length > 0) {
-    const randomGroup = rhymeGroups[Math.floor(Math.random() * rhymeGroups.length)];
-    return randomGroup;
+interface RhymeBrainEntry {
+  word: string;
+  score: number;
+  flags: string;
+  syllables: string;
+}
+
+// API Fetcher for external rhymes
+async function fetchRhymesFromAPI(word: string): Promise<string[]> {
+  try {
+    const resp = await fetch(`https://rhymebrain.com/talk?function=getRhymes&word=${encodeURIComponent(word)}`);
+    if (!resp.ok) throw new Error('API down');
+    const data: RhymeBrainEntry[] = await resp.json();
+    
+    // Filter for high quality rhymes (Score > 250 are perfect/near-perfect)
+    // We also limit to top 15 results for snappiness
+    return data
+      .filter((r) => r.score >= 250)
+      .map((r) => r.word.toLowerCase())
+      .slice(0, 15);
+  } catch (error) {
+    console.error('RhymeBrain API fetch failed:', error);
+    return [];
   }
-  
-  // Fallback to dynamic generation if no groups available
+}
+
+export async function getRandomRhymeGroup(difficulty: "easy" | "medium" | "hard"): Promise<RhymeGroup> {
   const words = DIFFICULTY_WORDS[difficulty];
   const baseWord = words[Math.floor(Math.random() * words.length)];
-  const rhymes = getLocalRhymes(baseWord, words);
   
+  // Try fetching from the API first
+  const apiRhymes = await fetchRhymesFromAPI(baseWord);
+  
+  if (apiRhymes.length > 5) { // Ensure there are enough rhymes to play with
+    return {
+      word: baseWord,
+      rhymes: apiRhymes.filter(r => r !== baseWord.toLowerCase()) // Ensure identity check
+    };
+  }
+
+  // Fallback to pre-computed or dynamic local groups if API is empty or fails
+  const localGroups = difficulty === "easy" ? EASY_RHYME_GROUPS :
+                      difficulty === "medium" ? MEDIUM_RHYME_GROUPS :
+                      HARD_RHYME_GROUPS;
+
+  if (localGroups.length > 0) {
+    // If we have a local group for THIS baseWord, use it
+    const matchingGroup = localGroups.find(g => g.word.toLowerCase() === baseWord.toLowerCase());
+    if (matchingGroup) return matchingGroup;
+    
+    // Otherwise pick any random group from this difficulty
+    return localGroups[Math.floor(Math.random() * localGroups.length)];
+  }
+  
+  // Ultimate fallback: dynamic generator
+  const localRhymes = getLocalRhymes(baseWord, words);
   return {
     word: baseWord,
-    rhymes: rhymes.length > 0 ? rhymes : []
+    rhymes: localRhymes.length > 0 ? localRhymes : []
   };
 }
 
