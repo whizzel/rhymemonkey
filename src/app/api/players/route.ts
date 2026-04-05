@@ -1,25 +1,21 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getOrCreatePlayer, getLeaderboard } from '@/lib/database';
+import { PlayerSchema } from '@/lib/schemas';
+import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name } = await request.json();
+    const body = await request.json();
+    const result = PlayerSchema.safeParse(body);
     
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Player name is required' },
+        { error: result.error.errors[0].message },
         { status: 400 }
       );
     }
     
-    if (name.trim().length > 20) {
-      return NextResponse.json(
-        { error: 'Player name must be 20 characters or less' },
-        { status: 400 }
-      );
-    }
-    
-    const player = await getOrCreatePlayer(name.trim());
+    const player = await getOrCreatePlayer(result.data.name.trim());
     return NextResponse.json({ player });
   } catch (error) {
     console.error('Error creating player:', error);
@@ -30,9 +26,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const leaderboard = await getLeaderboard(10);
+    const { searchParams } = new URL(request.url);
+    const limit = z.coerce.number().int().positive().default(10).parse(searchParams.get('limit') || '10');
+    
+    const leaderboard = await getLeaderboard(limit);
     return NextResponse.json({ leaderboard });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);

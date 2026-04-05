@@ -13,7 +13,6 @@ interface GameBoardProps {
   onInput: (value: string) => void;
   onSubmit: () => void;
   onSkip: () => void;
-  onHint: () => void;
   onPause: () => void;
 }
 
@@ -23,7 +22,7 @@ function getMood(err: boolean, ok: boolean): MonkeyMood {
   return 'idle';
 }
 
-export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit, onSkip, onHint, onPause }: GameBoardProps) {
+export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit, onSkip, onPause }: GameBoardProps) {
   const { isMuted, toggleMute, playClick, playTap } = useAudio();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -161,17 +160,6 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         .btn-submit { flex:1; background:linear-gradient(180deg,#cc1a1a,#8a0a0a); color:#fff; box-shadow:0 4px 0 #4a0505,0 5px 14px rgba(200,10,10,0.4); font-size:15px; }
         .btn-pause  { background:linear-gradient(180deg,#1a55cc,#0a2a8a); color:#c8e0ff; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(10,50,200,0.4); border:1px solid #2a4a9a; }
 
-        /* Hint tag */
-        .gb-hint-tag {
-          position:absolute; right:12px; top:50%; transform:translateY(-50%);
-          background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.2);
-          padding:5px 10px; border-radius:6px;
-          font-family:'Orbitron',monospace; font-size:10px; font-weight:700;
-          color:#ffaa00; text-shadow:0 0 8px rgba(255,170,0,0.3);
-          white-space:nowrap; pointer-events:none; z-index:5;
-          animation: fadeIn .3s ease;
-          text-transform:uppercase; letter-spacing:0.05em;
-        }
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
         /* Sound Toggle */
@@ -244,12 +232,10 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
             placeholder="enter your rhyme..."
             disabled={!gameState.isPlaying || gameState.isPaused}
           />
-          {gameState.hint && <div className="gb-hint-tag">💡 {gameState.hint}</div>}
         </div>
 
         <div className="gb-btns">
           <button type="button" className="gb-btn btn-skip" onClick={() => { playClick(); onSkip(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⏭ SKIP</button>
-          <button type="button" className="gb-btn btn-hint" onClick={() => { playClick(); onHint(); }} disabled={!gameState.isPlaying || gameState.isPaused || !!gameState.hint}>💡 HINT</button>
           <button type="button" className="gb-btn btn-submit" onClick={() => { playClick(); onSubmit(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⚡ SUBMIT</button>
           <button type="button" className="gb-btn btn-pause" onClick={() => { playClick(); onPause(); }} disabled={!gameState.isPlaying}>{gameState.isPaused ? '▶' : '⏸'}</button>
         </div>

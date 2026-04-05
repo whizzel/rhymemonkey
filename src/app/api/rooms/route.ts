@@ -1,29 +1,50 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createRoom, getRoomByCode, joinRoom } from '@/lib/database';
+import { z } from 'zod';
+import { DifficultySchema } from '@/lib/schemas';
+
+const CreateRoomSchema = z.object({
+  action: z.literal('create'),
+  hostId: z.string().cuid(),
+  difficulty: DifficultySchema,
+  timeLimit: z.number().int().positive()
+});
+
+const JoinRoomSchema = z.object({
+  action: z.literal('join'),
+  code: z.string().length(6),
+  playerId: z.string().cuid()
+});
+
+const RoomActionSchema = z.discriminatedUnion('action', [CreateRoomSchema, JoinRoomSchema]);
 
 export async function POST(request: NextRequest) {
   try {
-    const { action, hostId, difficulty, timeLimit, playerId, code } = await request.json();
+    const body = await request.json();
+    const result = RoomActionSchema.safeParse(body);
     
-    if (action === 'create') {
-      if (!hostId || !difficulty || !timeLimit) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-      }
-      
-      const room = await createRoom(hostId, difficulty, timeLimit);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    
+    const data = result.data;
+    
+    if (data.action === 'create') {
+      const room = await createRoom(data.hostId, data.difficulty, data.timeLimit);
       return NextResponse.json({ room });
     }
     
-    if (action === 'join') {
-      if (!playerId || !code) {
-        return NextResponse.json({ error: 'Missing player ID or room code' }, { status: 400 });
-      }
-      
-      const room = await joinRoom(code, playerId);
+    if (data.action === 'join') {
+      const room = await joinRoom(data.code, data.playerId);
       if (!room) {
-        return NextResponse.json({ error: 'Room not found or game already started' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Room not found or game already started' },
+          { status: 404 }
+        );
       }
-      
       return NextResponse.json({ room });
     }
     
@@ -37,13 +58,13 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
+    const code = z.string().length(6).safeParse(searchParams.get('code'));
     
-    if (!code) {
-      return NextResponse.json({ error: 'Code is required' }, { status: 400 });
+    if (!code.success) {
+      return NextResponse.json({ error: 'Valid room code is required' }, { status: 400 });
     }
     
-    const room = await getRoomByCode(code);
+    const room = await getRoomByCode(code.data);
     if (!room) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });
     }

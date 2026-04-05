@@ -22,8 +22,6 @@ export function useGameState() {
     difficulty: 'medium',
     timeLimit: 60,
     gameMode: 'solo',
-    hint: null,
-    hintsUsed: 0
   });
 
   const [currentRhymeGroup, setCurrentRhymeGroup] = useState<RhymeGroup | null>(null);
@@ -104,8 +102,6 @@ export function useGameState() {
       difficulty,
       timeLimit: adjustedTimeLimit,
       gameMode,
-      hint: null,
-      hintsUsed: 0
     });
 
     // Only wait for the FIRST rhyme group to start
@@ -177,7 +173,6 @@ export function useGameState() {
             accuracy: Math.round((nextWordsCompleted / nextTotalAttempts) * 100),
             currentWord: newWord,
             userInput: '',
-            hint: null
           };
         });
         
@@ -207,7 +202,6 @@ export function useGameState() {
             accuracy: Math.round((nextWordsCompleted / nextTotalAttempts) * 100),
             currentWord: newWord,
             userInput: '',
-            hint: null
           };
         });
         setIsLoading(false);
@@ -245,13 +239,15 @@ export function useGameState() {
       setCurrentRhymeGroup(nextRhymeGroup);
       setGameState(prev => {
         const nextTotalAttempts = prev.totalAttempts + 1;
+        const nextScore = Math.max(0, prev.score - 5); // Add -5 penalty
+        
         return {
           ...prev,
           userInput: '',
+          score: nextScore,
           totalAttempts: nextTotalAttempts,
           accuracy: Math.round((prev.wordsCompleted / nextTotalAttempts) * 100),
           currentWord: newWord,
-          hint: null
         };
       });
       
@@ -272,12 +268,14 @@ export function useGameState() {
       setCurrentRhymeGroup(newRhymeGroup);
       setGameState(prev => {
         const nextTotalAttempts = prev.totalAttempts + 1;
+        const nextScore = Math.max(0, prev.score - 5); // Add -5 penalty
+        
         return {
           ...prev,
+          score: nextScore,
           totalAttempts: nextTotalAttempts,
           accuracy: Math.round((prev.wordsCompleted / nextTotalAttempts) * 100),
           currentWord: newWord,
-          hint: null
         };
       });
       setIsLoading(false);
@@ -291,25 +289,6 @@ export function useGameState() {
     }
   }, [gameState.isPlaying, gameState.isPaused, isLoading, gameState.difficulty, currentRhymeGroup, nextRhymeGroup]);
 
-  const handleHint = useCallback(() => {
-    if (!gameState.isPlaying || gameState.isPaused || !currentRhymeGroup || gameState.hint) return;
-
-    // Filter out the current word from the rhymes to ensure the hint is for a DIFFERENT rhyming word
-    const allValid = [currentRhymeGroup.word, ...currentRhymeGroup.rhymes];
-    const candidateRhymes = allValid.filter(w => w.toLowerCase() !== gameState.currentWord.toLowerCase());
-    
-    if (candidateRhymes.length === 0) return;
-
-    const randomRhyme = candidateRhymes[Math.floor(Math.random() * candidateRhymes.length)];
-    const hintText = `Starts with "${randomRhyme[0].toUpperCase()}", ${randomRhyme.length} letters`;
-
-    setGameState(prev => ({
-      ...prev,
-      score: Math.max(0, prev.score - 5),
-      hintsUsed: prev.hintsUsed + 1,
-      hint: hintText
-    }));
-  }, [gameState.isPlaying, gameState.isPaused, currentRhymeGroup, gameState.currentWord, gameState.hint]);
 
   const resetGame = useCallback(() => {
     setGameState({
@@ -325,8 +304,6 @@ export function useGameState() {
       difficulty: 'medium',
       timeLimit: 60,
       gameMode: 'solo',
-      hint: null,
-      hintsUsed: 0
     });
     setCurrentRhymeGroup(null);
     setNextRhymeGroup(null);
@@ -347,7 +324,6 @@ export function useGameState() {
     handleInputChange,
     handleSubmitWord,
     handleSkip,
-    handleHint,
     resetGame
   };
 }

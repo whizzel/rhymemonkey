@@ -33,8 +33,6 @@ export interface GameState {
   difficulty: 'easy' | 'medium' | 'hard';
   timeLimit: number;
   gameMode: 'solo' | 'private';
-  hint: string | null;
-  hintsUsed: number;
 }
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished';

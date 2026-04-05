@@ -1,30 +1,21 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { saveGameSession, getPlayerGameSessions } from '@/lib/database';
+import { GameSessionSchema } from '@/lib/schemas';
+import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
-    const gameData = await request.json();
+    const body = await request.json();
+    const result = GameSessionSchema.safeParse(body);
     
-    const { playerId, playerName, difficulty, timeLimit, score, wordsCompleted, accuracy, duration } = gameData;
-    
-    if (!playerId || !playerName || !difficulty || !timeLimit || score === undefined || wordsCompleted === undefined || accuracy === undefined || duration === undefined) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: result.error.errors[0].message },
         { status: 400 }
       );
     }
     
-    const session = await saveGameSession({
-      playerId,
-      playerName,
-      difficulty,
-      timeLimit,
-      score,
-      wordsCompleted,
-      accuracy,
-      duration
-    });
-    
+    const session = await saveGameSession(result.data);
     return NextResponse.json({ session });
   } catch (error) {
     console.error('Error saving game session:', error);
@@ -39,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get('playerId');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = z.coerce.number().int().positive().default(10).parse(searchParams.get('limit') || '10');
     
     if (playerId) {
       const games = await getPlayerGameSessions(playerId, limit);

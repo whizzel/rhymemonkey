@@ -22,7 +22,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [gameMode, setGameMode] = useState<GameMode>(null);
 
-  const { gameState, showError, showSuccess, isNextLoading, startGame, pauseGame, handleInputChange, handleSubmitWord, handleSkip, handleHint, resetGame } = useGameState();
+  const { gameState, showError, showSuccess, isNextLoading, startGame, pauseGame, handleInputChange, handleSubmitWord, handleSkip, resetGame } = useGameState();
 
   const handleStartGame = async (mode: 'solo' | 'private') => {
     setError('');
@@ -195,7 +195,6 @@ export default function Home() {
         onInput={handleInputChange}
         onSubmit={handleSubmitWord}
         onSkip={handleSkip}
-        onHint={handleHint}
         onPause={pauseGame}
         onBackToMenu={handleBackToMenu}
         onShowLeaderboard={handleShowLeaderboard}
@@ -266,9 +265,24 @@ export default function Home() {
         </div>
 
         <div className="ld-particles">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <div key={`part-${i}`} className="ld-part" style={{ left: `${(i * 7 + 3) % 100}%`, width: 2, height: 2, background: i % 2 ? '#cc1a1a' : '#1a55cc', animationDuration: `${6 + (i % 4)}s`, animationDelay: `${i * 0.4}s`, boxShadow: `0 0 6px ${i % 2 ? '#cc1a1a' : '#1a55cc'}` }} />
-          ))}
+          {Array.from({ length: 15 }).map((_, i) => {
+            const id = `particle-${i}`;
+            return (
+              <div 
+                key={id} 
+                className="ld-part" 
+                style={{ 
+                  left: `${(i * 7 + 3) % 100}%`, 
+                  width: 2, 
+                  height: 2, 
+                  background: i % 2 ? '#cc1a1a' : '#1a55cc', 
+                  animationDuration: `${6 + (i % 4)}s`, 
+                  animationDelay: `${i * 0.4}s`, 
+                  boxShadow: `0 0 6px ${i % 2 ? '#cc1a1a' : '#1a55cc'}` 
+                }} 
+              />
+            );
+          })}
         </div>
 
         <div className="ld-bg">
@@ -279,7 +293,7 @@ export default function Home() {
                 ✕ BACK TO MENU
               </button>
             </div>
-            <Leaderboard />
+            <Leaderboard limit={50} />
           </div>
         </div>
       </>

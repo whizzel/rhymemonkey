@@ -34,59 +34,49 @@ export async function getOrCreatePlayer(name: string): Promise<Player> {
   };
 }
 
-// Update player rankings based on high scores
-async function updatePlayerRankings(): Promise<void> {
-  const players = await prisma.player.findMany({
-    orderBy: { highScore: 'desc' }
-  });
-  
-  // Update rankings in bulk
-  const updatePromises = players.map((player, index) => 
-    prisma.player.update({
-      where: { id: player.id },
-      data: { ranking: index + 1 }
-    })
-  );
-  
-  await Promise.all(updatePromises);
-}
-
 // Save game session and update player stats
 export async function saveGameSession(session: Omit<GameSession, 'id' | 'completedAt'>): Promise<GameSession> {
-  const gameSession = await prisma.gameSession.create({
-    data: {
-      ...session,
-      completedAt: new Date()
-    }
+  return await prisma.$transaction(async (tx) => {
+    // 1. Create game session
+    const gameSession = await tx.gameSession.create({
+      data: {
+        ...session,
+        completedAt: new Date()
+      }
+    });
+
+    // 2. Aggregate stats for the player
+    const stats = await tx.gameSession.aggregate({
+      where: { playerId: session.playerId },
+      _count: { id: true },
+      _sum: { score: true },
+      _max: { score: true }
+    });
+
+    const totalGames = stats._count.id;
+    const totalScore = stats._sum.score || 0;
+    const highScore = stats._max.score || 0;
+    const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
+
+    // 3. Update player stats
+    await tx.player.update({
+      where: { id: session.playerId },
+      data: {
+        totalGames,
+        highScore,
+        averageScore
+      }
+    });
+
+    // Note: Global ranking update is removed from the critical path
+    // rankings can be calculated on-the-fly or in a background job
+
+    return {
+      ...gameSession,
+      difficulty: session.difficulty as 'easy' | 'medium' | 'hard',
+      completedAt: gameSession.completedAt.toISOString()
+    };
   });
-  
-  // Update player stats
-  const playerGames = await prisma.gameSession.findMany({
-    where: { playerId: session.playerId }
-  });
-  
-  const totalScore = playerGames.reduce((sum, game) => sum + game.score, 0);
-  const averageScore = totalScore / playerGames.length;
-  const highScore = Math.max(...playerGames.map(game => game.score));
-  
-  // Update player ranking
-  await updatePlayerRankings();
-  
-  await prisma.player.update({
-    where: { id: session.playerId },
-    data: {
-      totalGames: playerGames.length,
-      highScore,
-      averageScore
-    }
-  });
-  
-  // Convert Prisma result to match GameSession type
-  return {
-    ...gameSession,
-    difficulty: session.difficulty, // Ensure correct type
-    completedAt: gameSession.completedAt.toISOString() // Convert Date to string
-  };
 }
 
 // Get leaderboard
