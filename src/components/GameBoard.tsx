@@ -100,7 +100,8 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
           background:linear-gradient(90deg,transparent,#00d4ff,transparent);
         }
         .gb-word-label { font-size:9px; font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:#3a6a9a; margin-bottom:10px; }
-        .gb-word { font-family:'Orbitron',monospace; font-size:42px; color:#c8e0ff; text-shadow:0 0 20px rgba(0,180,255,0.5); letter-spacing:.08em; line-height:1; }
+        .gb-word { font-family:'Orbitron',monospace; font-size:42px; color:#c8e0ff; text-shadow:0 0 20px rgba(0,180,255,0.5); letter-spacing:.08em; line-height:1; animation:gbWordIn .3s ease-out; }
+        @keyframes gbWordIn{from{opacity:0;transform:translateY(8px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 
         /* Input */
         .gb-input {
@@ -155,8 +156,8 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         }
         .gb-btn:hover::after { left:130%; }
 
-        .btn-skip   { background:linear-gradient(180deg,#1a3a5a,#0d1f35); color:#6a9ac0; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(0,0,0,0.5); border:1px solid #1a3a6a; }
-        .btn-hint   { background:linear-gradient(180deg,#ffaa00,#cc7700); color:#fff; box-shadow:0 4px 0 #663300,0 5px 14px rgba(255,170,0,0.3); }
+        .btn-skip   { background:linear-gradient(180deg,#1a3a5a,#0d1f35); color:#6a9ac0; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(0,0,0,0.5); border:1px solid #1a3a6a; display:flex;flex-direction:column;align-items:center;gap:1px; }
+        .btn-skip-penalty { font-size:8px;font-weight:800;letter-spacing:.08em;color:#ff4444;opacity:.7; }
         .btn-submit { flex:1; background:linear-gradient(180deg,#cc1a1a,#8a0a0a); color:#fff; box-shadow:0 4px 0 #4a0505,0 5px 14px rgba(200,10,10,0.4); font-size:15px; }
         .btn-pause  { background:linear-gradient(180deg,#1a55cc,#0a2a8a); color:#c8e0ff; box-shadow:0 4px 0 #060f1e,0 5px 12px rgba(10,50,200,0.4); border:1px solid #2a4a9a; }
 
@@ -210,7 +211,7 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         <div className="gb-mid">
           <div className="gb-word-panel">
             <div className="gb-word-label">⚡ Rhyme this word</div>
-            <div className="gb-word">{gameState.currentWord.toUpperCase()}</div>
+            <div key={gameState.currentWord} className="gb-word">{gameState.currentWord.toUpperCase()}</div>
           </div>
           <MonkeyCharacter mood={getMood(showError, showSuccess)} size={108} />
         </div>
@@ -235,7 +236,7 @@ export function GameBoard({ gameState, showError, showSuccess, onInput, onSubmit
         </div>
 
         <div className="gb-btns">
-          <button type="button" className="gb-btn btn-skip" onClick={() => { playClick(); onSkip(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⏭ SKIP</button>
+          <button type="button" className="gb-btn btn-skip" onClick={() => { playClick(); onSkip(); }} disabled={!gameState.isPlaying || gameState.isPaused}><span>⏭ SKIP</span><span className="btn-skip-penalty">-5 PTS</span></button>
           <button type="button" className="gb-btn btn-submit" onClick={() => { playClick(); onSubmit(); }} disabled={!gameState.isPlaying || gameState.isPaused}>⚡ SUBMIT</button>
           <button type="button" className="gb-btn btn-pause" onClick={() => { playClick(); onPause(); }} disabled={!gameState.isPlaying}>{gameState.isPaused ? '▶' : '⏸'}</button>
         </div>

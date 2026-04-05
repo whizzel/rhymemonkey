@@ -5649,59 +5649,87 @@ interface RhymeBrainEntry {
   syllables: string;
 }
 
-// API Fetcher for external rhymes
+// ─── In-memory cache for API responses ───────────────────────────────────────
+const rhymeCache = new Map<string, { rhymes: string[]; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedRhymes(word: string): string[] | null {
+  const entry = rhymeCache.get(word.toLowerCase());
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.rhymes;
+  }
+  rhymeCache.delete(word.toLowerCase());
+  return null;
+}
+
+function setCachedRhymes(word: string, rhymes: string[]): void {
+  // Keep cache size bounded
+  if (rhymeCache.size > 200) {
+    const oldest = rhymeCache.keys().next().value;
+    if (oldest) rhymeCache.delete(oldest);
+  }
+  rhymeCache.set(word.toLowerCase(), { rhymes, timestamp: Date.now() });
+}
+
+// API Fetcher for external rhymes (with caching)
 async function fetchRhymesFromAPI(word: string): Promise<string[]> {
+  // Check cache first
+  const cached = getCachedRhymes(word);
+  if (cached) return cached;
+
   try {
-    const resp = await fetch(`https://rhymebrain.com/talk?function=getRhymes&word=${encodeURIComponent(word)}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout
+
+    const resp = await fetch(
+      `https://rhymebrain.com/talk?function=getRhymes&word=${encodeURIComponent(word)}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+
     if (!resp.ok) throw new Error('API down');
     const data: RhymeBrainEntry[] = await resp.json();
     
     // Filter for high quality rhymes (Score > 250 are perfect/near-perfect)
-    // We also limit to top 15 results for snappiness
-    return data
+    const rhymes = data
       .filter((r) => r.score >= 250)
       .map((r) => r.word.toLowerCase())
       .slice(0, 15);
-  } catch (error) {
-    console.error('RhymeBrain API fetch failed:', error);
+
+    setCachedRhymes(word, rhymes);
+    return rhymes;
+  } catch {
     return [];
   }
 }
 
-export async function getRandomRhymeGroup(difficulty: "easy" | "medium" | "hard"): Promise<RhymeGroup> {
-  const words = DIFFICULTY_WORDS[difficulty];
-  const baseWord = words[Math.floor(Math.random() * words.length)];
-  
-  // Try fetching from the API first
-  const apiRhymes = await fetchRhymesFromAPI(baseWord);
-  
-  if (apiRhymes.length > 5) { // Ensure there are enough rhymes to play with
-    return {
-      word: baseWord,
-      rhymes: apiRhymes.filter(r => r !== baseWord.toLowerCase()) // Ensure identity check
-    };
-  }
-
-  // Fallback to pre-computed or dynamic local groups if API is empty or fails
+// ─── Instant local group resolver ────────────────────────────────────────────
+function getLocalGroup(difficulty: "easy" | "medium" | "hard"): RhymeGroup {
   const localGroups = difficulty === "easy" ? EASY_RHYME_GROUPS :
                       difficulty === "medium" ? MEDIUM_RHYME_GROUPS :
                       HARD_RHYME_GROUPS;
+  return localGroups[Math.floor(Math.random() * localGroups.length)];
+}
 
-  if (localGroups.length > 0) {
-    // If we have a local group for THIS baseWord, use it
-    const matchingGroup = localGroups.find(g => g.word.toLowerCase() === baseWord.toLowerCase());
-    if (matchingGroup) return matchingGroup;
-    
-    // Otherwise pick any random group from this difficulty
-    return localGroups[Math.floor(Math.random() * localGroups.length)];
+// Returns a rhyme group instantly from local data.
+// Optionally enriches from API in the background (fire-and-forget).
+export async function getRandomRhymeGroup(difficulty: "easy" | "medium" | "hard"): Promise<RhymeGroup> {
+  // Always return a local group instantly — no network wait
+  const localGroup = getLocalGroup(difficulty);
+
+  // Check if we have cached API data for this word
+  const cached = getCachedRhymes(localGroup.word);
+  if (cached && cached.length > 5) {
+    return {
+      word: localGroup.word,
+      rhymes: [...new Set([...localGroup.rhymes, ...cached.filter(r => r !== localGroup.word.toLowerCase())])]
+    };
   }
-  
-  // Ultimate fallback: dynamic generator
-  const localRhymes = getLocalRhymes(baseWord, words);
-  return {
-    word: baseWord,
-    rhymes: localRhymes.length > 0 ? localRhymes : []
-  };
+
+  // Fire-and-forget: warm the cache for this word for next time
+  fetchRhymesFromAPI(localGroup.word).catch(() => {});
+
+  return localGroup;
 }
 
 export function getRandomWordFromGroup(group: RhymeGroup): string {
