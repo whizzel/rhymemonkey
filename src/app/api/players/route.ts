@@ -18,7 +18,13 @@ export async function POST(request: NextRequest) {
     const player = await getOrCreatePlayer(result.data.name.trim());
     return NextResponse.json({ player });
   } catch (error) {
-    console.error('Error creating player:', error);
+    console.error('Error in POST /api/players:', {
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -34,7 +40,13 @@ export async function GET(request: NextRequest) {
     const leaderboard = await getLeaderboard(limit);
     return NextResponse.json({ leaderboard });
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
+    console.error('Error in GET /api/players:', {
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
