@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = z.coerce.number().int().positive().default(10).parse(searchParams.get('limit') || '10');
+    const rawLimit = searchParams.get('limit') ?? '10';
+    const limit = z.coerce.number().int().positive().parse(rawLimit);
     
     const leaderboard = await getLeaderboard(limit);
     return NextResponse.json({ leaderboard });

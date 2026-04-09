@@ -4,16 +4,16 @@ export const DifficultySchema = z.enum(['easy', 'medium', 'hard']);
 export const RoomStatusSchema = z.enum(['waiting', 'playing', 'finished']);
 
 export const PlayerSchema = z.object({
-  id: z.string().cuid().optional(),
+  id: z.string().min(1).optional(),
   name: z.string().min(1).max(20),
   totalGames: z.number().int().nonnegative().optional(),
   highScore: z.number().int().nonnegative().optional(),
   averageScore: z.number().nonnegative().optional(),
-  createdAt: z.string().datetime().optional(),
+  createdAt: z.string().optional(),
 });
 
 export const GameSessionSchema = z.object({
-  playerId: z.string().cuid(),
+  playerId: z.string().min(1),
   playerName: z.string(),
   difficulty: DifficultySchema,
   timeLimit: z.number().int().positive(),
@@ -24,11 +24,11 @@ export const GameSessionSchema = z.object({
 });
 
 export const RoomSchema = z.object({
-  id: z.string().cuid().optional(),
+  id: z.string().min(1).optional(),
   code: z.string().length(6).optional(),
-  hostId: z.string().cuid(),
+  hostId: z.string().min(1),
   difficulty: DifficultySchema,
   timeLimit: z.number().int().positive(),
   status: RoomStatusSchema.optional(),
-  createdAt: z.string().datetime().optional(),
+  createdAt: z.string().optional(),
 });
