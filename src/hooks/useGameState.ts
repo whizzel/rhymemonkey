@@ -94,23 +94,43 @@ export function useGameState() {
     setGameState(prev => ({ ...prev, isPlaying: false }));
   }, [player, gameState]);
 
-  // Timer effect — no longer depends on isLoading
+  const timeRef = useRef(gameState.timeRemaining);
+  const playingRef = useRef(gameState.isPlaying);
+  const pausedRef = useRef(gameState.isPaused);
+  
+  useEffect(() => {
+    timeRef.current = gameState.timeRemaining;
+    playingRef.current = gameState.isPlaying;
+    pausedRef.current = gameState.isPaused;
+  }, [gameState.timeRemaining, gameState.isPlaying, gameState.isPaused]);
+
+  // Timer effect using refs to prevent interval churn
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
+    // Start interval if we are playing and not paused
     if (gameState.isPlaying && !gameState.isPaused && gameState.timeRemaining > 0) {
       interval = setInterval(() => {
-        setGameState(prev => ({
-          ...prev,
-          timeRemaining: prev.timeRemaining - 1
-        }));
+        // If state changed underneath us, let the effect handle cleanup
+        if (!playingRef.current || pausedRef.current || timeRef.current <= 0) return;
+        
+        setGameState(prev => {
+          if (prev.timeRemaining === 1) {
+            // Last tick, call endGame asynchronously
+            setTimeout(() => endGame(), 0);
+          }
+          return {
+            ...prev,
+            timeRemaining: prev.timeRemaining - 1
+          };
+        });
       }, 1000);
     } else if (gameState.timeRemaining === 0 && gameState.isPlaying) {
       endGame();
     }
 
     return () => clearInterval(interval);
-  }, [gameState.isPlaying, gameState.isPaused, gameState.timeRemaining, endGame]);
+  }, [gameState.isPlaying, gameState.isPaused, endGame]);
 
   const startGame = useCallback(async (playerData: Player, difficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameMode: 'solo' | 'private') => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
